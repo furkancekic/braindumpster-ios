@@ -1,0 +1,99 @@
+name: Braindumpster
+options:
+  bundleIdPrefix: com.braindumpster
+  deploymentTarget:
+    iOS: 16.0
+schemes:
+  Braindumpster:
+    build:
+      targets:
+        Braindumpster: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 10.20.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 7.0.0
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: 4.43.0
+targets:
+  Braindumpster:
+    type: application
+    platform: iOS
+    sources:
+      - BraindumpsterApp.swift
+      - AppDelegate.swift
+      - Models.swift
+      - ContentView.swift
+      - VoiceInputView.swift
+      - AISuggestionsView.swift
+      - SignInView.swift
+      - ForgotPasswordView.swift
+      - ChatView.swift
+      - SignUpView.swift
+      - SettingsView.swift
+      - ProfileCompletionView.swift
+      - CalendarDetailView.swift
+      - TaskDetailView.swift
+      - ToastView.swift
+      - PrivacyPolicyView.swift
+      - TermsOfServiceView.swift
+      - AuthService.swift
+      - BraindumpsterAPI.swift
+      - AudioRecorder.swift
+      - StoreManager.swift
+      - PremiumView.swift
+      - path: GoogleService-Info.plist
+        buildPhase: resources
+      - path: Assets.xcassets
+        buildPhase: resources
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseMessaging
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
+      - package: RevenueCat
+        product: RevenueCat
+    info:
+      path: Info.plist
+      properties:
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "5"
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSMicrophoneUsageDescription: "Braindumpster needs access to your microphone to record voice notes and convert them to tasks"
+        NSPhotoLibraryUsageDescription: "Braindumpster needs access to your photo library to save task images"
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - com.googleusercontent.apps.28669271299-u56r6vaqfqc95fmm28ojivl64qpbvbfi
+        GIDClientID: 28669271299-u56r6vaqfqc95fmm28ojivl64qpbvbfi.apps.googleusercontent.com
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.braindumpster.app
+      SWIFT_VERSION: 5.9
+      DEVELOPMENT_TEAM: "5QWR4DUS35"
+      CODE_SIGN_STYLE: Automatic
+      CODE_SIGN_ENTITLEMENTS: Braindumpster.entitlements
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      ENABLE_BITCODE: NO
+      COPY_PHASE_STRIP: NO

@@ -1,0 +1,15 @@
+name: TaskApp
+options:
+  bundleIdPrefix: com.taskapp
+  deploymentTarget:
+    iOS: 16.0
+targets:
+  TaskApp:
+    type: application
+    platform: iOS
+    sources:
+      - ../
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.taskapp.TaskApp
+      INFOPLIST_FILE: Info.plist
+      SWIFT_VERSION: 5.9
