@@ -258,6 +258,40 @@ struct SettingsView: View {
                             )
                             .shadow(color: Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.2), radius: 10, x: 0, y: 5)
                             .padding(.horizontal, 16)
+
+                            // Manage Subscription Button
+                            Button(action: {
+                                openSubscriptionManagement()
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "gearshape.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(Color(red: 0.4, green: 0.75, blue: 0.88))
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Manage Subscription")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.black)
+
+                                        Text("Change plan or cancel anytime")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(white: 0.5))
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "arrow.up.right.square.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(Color(red: 0.4, green: 0.75, blue: 0.88))
+                                }
+                                .padding(14)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
                         }
 
                         // NOTIFICATIONS Section
@@ -542,6 +576,16 @@ struct SettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(deleteErrorMessage)
+        }
+    }
+
+    // MARK: - Subscription Management
+    private func openSubscriptionManagement() {
+        // Open Apple's subscription management page
+        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+            #if canImport(UIKit)
+            UIApplication.shared.open(url)
+            #endif
         }
     }
 
