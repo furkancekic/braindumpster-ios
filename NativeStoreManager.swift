@@ -280,6 +280,34 @@ class NativeStoreManager: ObservableObject {
         print("   Active products: \(purchasedProductIDs.isEmpty ? "None" : purchasedProductIDs.joined(separator: ", "))")
         print("   Expiration: \(premiumExpirationDate?.description ?? "Lifetime")")
         print("   Total entitlements checked: \(entitlementCount)")
+
+        // Sync with backend if user has premium
+        if isPremium, let productID = activePremiumProductID, let expirationDate = latestExpirationDate {
+            print("🔄 [NativeStore] Syncing subscription status with backend...")
+
+            do {
+                try await syncSubscriptionWithBackend(
+                    productID: productID,
+                    expirationDate: expirationDate
+                )
+                print("✅ [NativeStore] Backend sync successful")
+            } catch {
+                print("⚠️ [NativeStore] Backend sync failed (non-critical): \(error.localizedDescription)")
+            }
+        } else if isPremium, let productID = activePremiumProductID {
+            // Lifetime subscription (no expiration)
+            print("🔄 [NativeStore] Syncing lifetime subscription with backend...")
+
+            do {
+                try await syncSubscriptionWithBackend(
+                    productID: productID,
+                    expirationDate: nil
+                )
+                print("✅ [NativeStore] Backend sync successful")
+            } catch {
+                print("⚠️ [NativeStore] Backend sync failed (non-critical): \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: - Listen for Transactions
@@ -323,6 +351,97 @@ class NativeStoreManager: ObservableObject {
         case .verified(let safe):
             return safe
         }
+    }
+
+    // MARK: - Backend Sync
+    private func syncSubscriptionWithBackend(productID: String, expirationDate: Date?) async throws {
+        guard let userId = AuthService.shared.user?.uid else {
+            throw NSError(domain: "NativeStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user logged in"])
+        }
+
+        let environment = getEnvironment()
+
+        // Try receipt validation first (for App Review and production)
+        // If it fails (sandbox/simulator), fallback to direct sync
+        let useReceiptValidation = environment.contains("Production") || environment.contains("TestFlight")
+
+        if useReceiptValidation {
+            print("📱 [NativeStore] Using receipt validation (Production/TestFlight)")
+
+            // Find the active transaction for receipt validation
+            for await result in Transaction.currentEntitlements {
+                do {
+                    let transaction = try checkVerified(result)
+                    if transaction.productID == productID {
+                        // Try receipt validation (App Review compatible)
+                        do {
+                            _ = try await ReceiptValidationService.shared.verifyReceipt(
+                                transaction: transaction,
+                                userId: userId
+                            )
+                            print("✅ [NativeStore] Receipt validation successful")
+                            return // Success, no need for fallback
+                        } catch {
+                            print("⚠️ [NativeStore] Receipt validation failed: \(error.localizedDescription)")
+                            print("   Falling back to direct sync...")
+                            // Continue to fallback below
+                        }
+                        break
+                    }
+                } catch {
+                    print("⚠️ [NativeStore] Transaction verification failed")
+                }
+            }
+        } else {
+            print("🧪 [NativeStore] Using direct sync (Sandbox/Simulator)")
+        }
+
+        // Fallback: Direct sync (for Sandbox/Simulator or if receipt validation fails)
+        print("🔄 [NativeStore] Syncing via direct API call...")
+
+        // Determine tier from product ID
+        let tier: String
+        if productID.contains("yearly") {
+            tier = "yearly"
+        } else if productID.contains("monthly") {
+            tier = "monthly"
+        } else if productID.contains("lifetime") {
+            tier = "lifetime"
+        } else {
+            tier = "premium"
+        }
+
+        // Create timestamp in required format (ISO8601)
+        let timestampFormatter = ISO8601DateFormatter()
+        timestampFormatter.formatOptions = [.withInternetDateTime]
+        let timestamp = timestampFormatter.string(from: Date())
+
+        // Prepare subscription data
+        var subscriptionData: [String: Any] = [
+            "user_id": userId,
+            "timestamp": timestamp,
+            "subscription_status": [
+                "is_premium": true,
+                "tier": tier,
+                "product_id": productID,
+                "platform": "ios",
+                "is_active": true,
+                "will_renew": expirationDate != nil // lifetime doesn't renew
+            ]
+        ]
+
+        // Add expiration date if available
+        if let expirationDate = expirationDate {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            subscriptionData["subscription_status"] = (subscriptionData["subscription_status"] as! [String: Any]).merging([
+                "expiration_date": formatter.string(from: expirationDate)
+            ]) { _, new in new }
+        }
+
+        // Send to backend
+        _ = try await BraindumpsterAPI.shared.syncSubscriptionStatus(data: subscriptionData)
+        print("✅ [NativeStore] Direct sync successful")
     }
 
     // MARK: - Helper Methods

@@ -160,7 +160,7 @@ class ReceiptValidationService {
     // MARK: - Network Request
 
     private func sendVerificationRequest(request: ReceiptVerificationRequest) async throws -> ReceiptVerificationResponse {
-        let url = URL(string: "\(BackendConfig.baseURL)/verify-receipt")!
+        let url = URL(string: "\(BackendConfig.baseURL)/subscriptions/verify-receipt")!
 
         // Get Firebase auth token
         let authToken: String

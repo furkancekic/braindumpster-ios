@@ -1340,6 +1340,80 @@ extension BraindumpsterAPI {
         let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
         return result
     }
+
+    // MARK: - Subscription Management (In-App)
+
+    /// Get subscription status for current authenticated user
+    func getSubscriptionStatus() async throws -> [String: Any] {
+        guard let userId = AuthService.shared.user?.uid else {
+            throw APIError.unauthorized
+        }
+
+        let endpoint = "\(baseURL)/subscriptions/status?user_id=\(userId)"
+
+        // Get auth token
+        let token = try await AuthService.shared.getIdToken()
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        return result
+    }
+
+    /// Cancel user's subscription
+    func cancelSubscription(reason: String = "user_cancelled") async throws -> [String: Any] {
+        guard let userId = AuthService.shared.user?.uid else {
+            throw APIError.unauthorized
+        }
+
+        let endpoint = "\(baseURL)/subscriptions/cancel"
+
+        // Get auth token
+        let token = try await AuthService.shared.getIdToken()
+
+        // Create request body
+        let requestBody: [String: Any] = [
+            "user_id": userId,
+            "reason": reason
+        ]
+
+        let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        let result = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        return result
+    }
 }
 
 // MARK: - API Errors

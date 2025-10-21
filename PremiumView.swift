@@ -95,7 +95,42 @@ struct PremiumView: View {
                         if storeManager.isLoading {
                             ProgressView()
                                 .padding(.vertical, 40)
-                        } else if !storeManager.products.isEmpty {
+                        } else if storeManager.products.isEmpty {
+                            // Products not available - show error instead of fallback
+                            VStack(spacing: 16) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.orange)
+
+                                Text("Unable to Load Products")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.black)
+
+                                Text("Please check your internet connection and try again.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(white: 0.5))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+
+                                Button(action: {
+                                    _Concurrency.Task {
+                                        await storeManager.loadProducts()
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "arrow.clockwise")
+                                        Text("Retry")
+                                    }
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 120, height: 44)
+                                    .background(Color(red: 0.4, green: 0.75, blue: 0.88))
+                                    .cornerRadius(22)
+                                }
+                                .padding(.top, 8)
+                            }
+                            .padding(.vertical, 40)
+                        } else {
                             // Yearly Plan
                             if let yearlyProduct = storeManager.yearlyProduct {
                                 NativePlanCard(
@@ -128,48 +163,6 @@ struct PremiumView: View {
                                     selectedProductID = lifetimeProduct.id
                                 }
                             }
-                        } else {
-                            // Fallback pricing when products unavailable
-                            FallbackPlanCard(
-                                title: "Yearly Premium",
-                                price: "$49.99",
-                                period: "year",
-                                productID: "brain_dumpster_yearly_premium",
-                                badge: "MOST POPULAR",
-                                savings: "Save 50%",
-                                isSelected: selectedProductID == "brain_dumpster_yearly_premium"
-                            ) {
-                                selectedProductID = "brain_dumpster_yearly_premium"
-                            }
-
-                            FallbackPlanCard(
-                                title: "Monthly Premium",
-                                price: "$9.99",
-                                period: "month",
-                                productID: "brain_dumpster_monthly_premium",
-                                badge: nil,
-                                savings: nil,
-                                isSelected: selectedProductID == "brain_dumpster_monthly_premium"
-                            ) {
-                                selectedProductID = "brain_dumpster_monthly_premium"
-                            }
-
-                            FallbackPlanCard(
-                                title: "Lifetime Premium",
-                                price: "$99.99",
-                                period: "one-time",
-                                productID: "brain_dumpster_lifetime_premium",
-                                badge: "BEST VALUE",
-                                savings: nil,
-                                isSelected: selectedProductID == "brain_dumpster_lifetime_premium"
-                            ) {
-                                selectedProductID = "brain_dumpster_lifetime_premium"
-                            }
-
-                            Text("⚠️ Products awaiting approval - Showing preview pricing")
-                                .font(.system(size: 10))
-                                .foregroundColor(Color(white: 0.6))
-                                .padding(.top, 8)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -264,8 +257,8 @@ struct PremiumView: View {
     // MARK: - Purchase Selected
     private func purchaseSelected() {
         guard let product = storeManager.product(for: selectedProductID) else {
-            toastMessage = "Products are awaiting App Store approval. You can still view pricing!"
-            toastType = .info
+            toastMessage = "Unable to load products. Please check your connection and try again."
+            toastType = .error
             showToast = true
             return
         }

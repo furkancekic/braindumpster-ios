@@ -167,6 +167,29 @@ class AuthService: ObservableObject {
         }
     }
 
+    // Async/await version for modern Swift concurrency
+    func getIdToken() async throws -> String {
+        guard let user = Auth.auth().currentUser else {
+            throw NSError(domain: "AuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user signed in"])
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            user.getIDToken { token, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                guard let token = token else {
+                    continuation.resume(throwing: NSError(domain: "AuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get token"]))
+                    return
+                }
+
+                continuation.resume(returning: token)
+            }
+        }
+    }
+
     // MARK: - Update User Timezone
     /// Update user's timezone information in backend
     /// Call this after sign in/sign up and when app becomes active

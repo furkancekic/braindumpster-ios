@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var showDeleteError = false
     @State private var deleteErrorMessage = ""
     @State private var showPremium = false
+    @State private var showSubscriptionManagement = false
     @StateObject private var storeManager = NativeStoreManager.shared
 
     var body: some View {
@@ -261,7 +262,7 @@ struct SettingsView: View {
 
                             // Manage Subscription Button
                             Button(action: {
-                                openSubscriptionManagement()
+                                showSubscriptionManagement = true
                             }) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "gearshape.fill")
@@ -280,9 +281,9 @@ struct SettingsView: View {
 
                                     Spacer()
 
-                                    Image(systemName: "arrow.up.right.square.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(Color(red: 0.4, green: 0.75, blue: 0.88))
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(white: 0.7))
                                 }
                                 .padding(14)
                                 .background(Color.white)
@@ -548,6 +549,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showPremium) {
             PremiumView()
         }
+        .sheet(isPresented: $showSubscriptionManagement) {
+            SubscriptionManagementView()
+        }
         .sheet(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView()
         }
@@ -570,22 +574,20 @@ struct SettingsView: View {
                 deleteAccount()
             }
         } message: {
-            Text("This will permanently delete your account and all your tasks. This can't be undone. Are you sure? 😢")
+            if storeManager.isPremium {
+                if let expirationDate = storeManager.premiumExpirationDate {
+                    Text("⚠️ You have an active subscription until \(expirationDate, formatter: DateFormatter.premiumDate). Your subscription will continue through Apple until expiration.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone.")
+                } else {
+                    Text("⚠️ You have a lifetime premium subscription. Your subscription is managed through Apple.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone.")
+                }
+            } else {
+                Text("This will permanently delete your account and all your tasks. This action cannot be undone.")
+            }
         }
         .alert("Delete Error", isPresented: $showDeleteError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(deleteErrorMessage)
-        }
-    }
-
-    // MARK: - Subscription Management
-    private func openSubscriptionManagement() {
-        // Open Apple's subscription management page
-        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-            #if canImport(UIKit)
-            UIApplication.shared.open(url)
-            #endif
         }
     }
 
@@ -649,24 +651,38 @@ struct SettingsView: View {
         isDeleting = true
 
         _Concurrency.Task {
-            do {
-                // Call API to delete account from backend
-                try await BraindumpsterAPI.shared.deleteAccount()
+            var backendSuccess = false
 
-                // Delete Firebase account
-                try await authService.deleteAccount()
+            do {
+                // Step 1: Call backend API to delete account
+                // Backend will delete Firestore data AND Firebase Auth user
+                try await BraindumpsterAPI.shared.deleteAccount()
+                backendSuccess = true
+                print("✅ Backend deleted account successfully")
+
+                // Step 2: Sign out locally (Auth state listener will update automatically)
+                try authService.signOut()
 
                 await MainActor.run {
                     isDeleting = false
-                    // User will be automatically logged out after account deletion
+                    // Dismiss settings - user is now signed out
                     dismiss()
                 }
             } catch {
                 await MainActor.run {
                     isDeleting = false
-                    deleteErrorMessage = error.localizedDescription
-                    showDeleteError = true
-                    print("❌ Failed to delete account: \(error.localizedDescription)")
+
+                    // If backend succeeded but local sign out failed, still dismiss
+                    // User is already deleted from backend
+                    if backendSuccess {
+                        print("⚠️ Backend succeeded but local sign out failed - dismissing anyway")
+                        dismiss()
+                    } else {
+                        // Backend deletion failed - show error
+                        deleteErrorMessage = error.localizedDescription
+                        showDeleteError = true
+                        print("❌ Failed to delete account from backend: \(error.localizedDescription)")
+                    }
                 }
             }
         }

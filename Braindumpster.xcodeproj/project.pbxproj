@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B494F846AC0A4570B0857DB4 /* SubscriptionManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF70DB9F6354E4EBAD8FC89 /* SubscriptionManagementView.swift */; };
+
 		04FDEFF8064B479B8085377F /* StreakManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4A3A2798E47478985F5F0 /* StreakManager.swift */; };
 		63333666336338642D303037332D343564302D393832622D /* ReceiptValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31626537373330642D356131312D343364642D616461362D /* ReceiptValidationService.swift */; };
 		38313261356438322D353239312D346662362D383136652D /* BackendConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66313233646666352D663136622D346639392D626265622D /* BackendConfig.swift */; };
@@ -53,6 +55,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8DF70DB9F6354E4EBAD8FC89 /* SubscriptionManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManagementView.swift; sourceTree = "<group>"; };
+
 		071A899F1A86860B1B145C45 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		31626537373330642D356131312D343364642D616461362D /* ReceiptValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptValidationService.swift; sourceTree = "<group>"; };
 		66313233646666352D663136622D346639392D626265622D /* BackendConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendConfig.swift; sourceTree = "<group>"; };
@@ -139,6 +143,7 @@
 				5A0691AA137CE45217ABE333 /* PrivacyPolicyView.swift */,
 				39DFF54D0F736784031C9408 /* ProfileCompletionView.swift */,
 				873A7A610442B4FE858E5BC0 /* SettingsView.swift */,
+				8DF70DB9F6354E4EBAD8FC89 /* SubscriptionManagementView.swift */,
 				22C76463088D60622B076A33 /* SignInView.swift */,
 				71823FE2E9F11B517F9BCFAF /* SignUpView.swift */,
 				09D147191F57F7F37D32A39B /* StoreManager.swift */,
@@ -260,6 +265,7 @@
 				FB1B811F5F2228481C2AA842 /* PrivacyPolicyView.swift in Sources */,
 				8E9B27DA9650363253B411CA /* ProfileCompletionView.swift in Sources */,
 				C140749FA090AB81D166C570 /* SettingsView.swift in Sources */,
+				B494F846AC0A4570B0857DB4 /* SubscriptionManagementView.swift in Sources */,
 				759607C9344178456750DE2C /* SignInView.swift in Sources */,
 				8A927CF8CDD4E51858A79F8F /* SignUpView.swift in Sources */,
 				857D94DD7ABFD852066E8276 /* StoreManager.swift in Sources */,
