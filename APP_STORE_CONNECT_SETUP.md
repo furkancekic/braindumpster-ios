@@ -30,28 +30,41 @@ Sandbox URL: http://57.129.81.193:5001/api/webhooks/apple
 
 ## ADIM 2: Billing Grace Period Aktifle (2 dakika)
 
+⚠️ **ÖNEMLİ**: Billing Grace Period artık APP SEVİYESİNDE ayarlanıyor (her subscription için ayrı değil!)
+
 ### Nereye gideceksin:
-1. **App Store Connect** → **My Apps** → **Braindumpster**
-2. Sol menüden **Subscriptions** tıkla
-3. **Yearly Premium** (brain_dumpster_yearly_premium) tıkla
+1. **App Store Connect** → **Apps** → **Braindumpster** seç
+2. Sol sidebar'dan **Subscriptions** tıkla
+3. **Billing Grace Period** bölümünü bul (sayfanın üst kısmında)
+4. **Set Up Billing Grace Period** butonuna tıkla (eğer hiç setup edilmediyse)
+   VEYA
+   **Edit** butonuna tıkla (eğer daha önce setup edildiyse)
 
 ### Ne yapacaksın:
-1. Aşağı scroll et → **Billing Grace Period** bölümünü bul
-2. **Enable Billing Grace Period** toggle'ı aç
-3. **Duration:** 16 days seç
-4. **Apply to:** All renewals seç
+```
+Duration: 16 days seç
+  (3, 16, veya 28 gün seçenekleri var)
+
+Renewal Types: All Renewals seç
+  (Tüm renewals için geçerli olacak)
+
+Server Environments: Production and Sandbox Environment seç
+  (Her iki environment için aktif olacak)
+```
 
 ### Tıkla:
 - **Save** butonu
 
-### Aynısını tekrarla:
-- **Monthly Premium** için
-- **Lifetime Premium** için (eğer subscription ise)
-
 ### ✅ Nasıl anlarsın başarılı olduğunu:
-- Toggle açık (yeşil)
-- "16 days" görünüyor
-- "All renewals" seçili
+- Billing Grace Period section'da "16 days" görünüyor
+- "All Renewals" yazıyor
+- "Production and Sandbox Environment" seçili
+- Tüm subscriptions (Yearly, Monthly, Lifetime) için otomatik uygulanmış olacak
+
+### 💡 NOT:
+- Değişiklikler 24 saat içinde aktif olur
+- Bu ayar APP seviyesinde olduğu için TÜM subscription products için geçerli
+- Ayrı ayrı her product için ayarlamana gerek YOK
 
 ---
 
