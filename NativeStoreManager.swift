@@ -19,8 +19,11 @@ class NativeStoreManager: ObservableObject {
     @Published var isPremium = false
     @Published var premiumExpirationDate: Date?
     @Published var currentPremiumProductID: String?
+    @Published var isInBillingRetry = false
+    @Published var daysUntilExpiration: Int?
 
     private var updateListenerTask: _Concurrency.Task<Void, Never>?
+    private var expirationCheckTimer: Timer?
 
     private init() {
         // Start listening for transactions
@@ -30,6 +33,7 @@ class NativeStoreManager: ObservableObject {
         _Concurrency.Task {
             await loadProducts()
             await updatePurchaseStatus()
+            await startExpirationMonitoring()
         }
     }
 
@@ -281,6 +285,9 @@ class NativeStoreManager: ObservableObject {
         print("   Expiration: \(premiumExpirationDate?.description ?? "Lifetime")")
         print("   Total entitlements checked: \(entitlementCount)")
 
+        // Check billing retry status
+        await checkBillingRetryStatus()
+
         // Sync with backend if user has premium
         if isPremium, let productID = activePremiumProductID, let expirationDate = latestExpirationDate {
             print("🔄 [NativeStore] Syncing subscription status with backend...")
@@ -472,5 +479,104 @@ class NativeStoreManager: ObservableObject {
         }
         return "Production (App Store)"
         #endif
+    }
+
+    // MARK: - Expiration Monitoring
+    private func startExpirationMonitoring() async {
+        print("⏰ [NativeStore] Starting expiration monitoring...")
+
+        // Check expiration immediately
+        await checkExpiration()
+
+        // Schedule periodic checks (every 24 hours)
+        await MainActor.run {
+            expirationCheckTimer?.invalidate()
+            expirationCheckTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+                _Concurrency.Task {
+                    await self?.checkExpiration()
+                }
+            }
+        }
+    }
+
+    private func checkExpiration() async {
+        guard let expirationDate = premiumExpirationDate else {
+            // Lifetime subscription or no subscription
+            await MainActor.run {
+                daysUntilExpiration = nil
+            }
+            return
+        }
+
+        let now = Date()
+        let timeInterval = expirationDate.timeIntervalSince(now)
+
+        if timeInterval <= 0 {
+            // Subscription expired
+            print("⏰ [NativeStore] Subscription expired!")
+            print("   Expiration date: \(expirationDate)")
+            print("   Current date: \(now)")
+
+            // Update purchase status to reflect expiration
+            await updatePurchaseStatus()
+
+            await MainActor.run {
+                daysUntilExpiration = 0
+            }
+        } else {
+            // Calculate days until expiration
+            let days = Int(ceil(timeInterval / 86400))
+
+            await MainActor.run {
+                daysUntilExpiration = days
+            }
+
+            print("⏰ [NativeStore] Subscription status:")
+            print("   Expires in: \(days) days")
+            print("   Expiration date: \(expirationDate)")
+
+            // Warn user if expiring soon (7 days or less)
+            if days <= 7 {
+                print("⚠️ [NativeStore] Subscription expiring soon!")
+            }
+        }
+    }
+
+    // MARK: - Check Billing Retry Status
+    func checkBillingRetryStatus() async {
+        print("💳 [NativeStore] Checking billing retry status...")
+
+        var inRetry = false
+
+        for await result in Transaction.currentEntitlements {
+            do {
+                let transaction = try checkVerified(result)
+
+                // Check if subscription is in billing retry
+                if let subscription = transaction.subscription {
+                    // Note: isInBillingRetryPeriod is available in iOS 15+
+                    if #available(iOS 15.0, *) {
+                        if subscription.isInBillingRetryPeriod {
+                            inRetry = true
+                            print("⚠️ [NativeStore] Subscription in billing retry")
+                            print("   Product: \(transaction.productID)")
+                            break
+                        }
+                    }
+                }
+            } catch {
+                print("❌ [NativeStore] Failed to check billing retry: \(error.localizedDescription)")
+            }
+        }
+
+        await MainActor.run {
+            isInBillingRetry = inRetry
+        }
+
+        if inRetry {
+            print("💳 [NativeStore] Billing retry active - user should update payment method")
+        } else {
+            print("✅ [NativeStore] No billing issues")
+        }
     }
 }

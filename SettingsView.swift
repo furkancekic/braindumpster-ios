@@ -218,9 +218,33 @@ struct SettingsView: View {
 
                                     if let expirationDate = storeManager.premiumExpirationDate {
                                         // Subscription with expiration
-                                        Text("Active until \(expirationDate, formatter: DateFormatter.premiumDate)")
-                                            .font(.system(size: 15))
-                                            .foregroundColor(Color(white: 0.5))
+                                        if let daysUntilExpiration = storeManager.daysUntilExpiration {
+                                            if daysUntilExpiration <= 7 && daysUntilExpiration > 0 {
+                                                Text("⚠️ Expires in \(daysUntilExpiration) day\(daysUntilExpiration == 1 ? "" : "s")")
+                                                    .font(.system(size: 15, weight: .medium))
+                                                    .foregroundColor(.orange)
+                                            } else if daysUntilExpiration == 0 {
+                                                Text("⚠️ Expired - Please renew")
+                                                    .font(.system(size: 15, weight: .medium))
+                                                    .foregroundColor(.red)
+                                            } else {
+                                                Text("Active until \(expirationDate, formatter: DateFormatter.premiumDate)")
+                                                    .font(.system(size: 15))
+                                                    .foregroundColor(Color(white: 0.5))
+                                            }
+                                        } else {
+                                            Text("Active until \(expirationDate, formatter: DateFormatter.premiumDate)")
+                                                .font(.system(size: 15))
+                                                .foregroundColor(Color(white: 0.5))
+                                        }
+
+                                        // Billing retry warning
+                                        if storeManager.isInBillingRetry {
+                                            Text("💳 Payment issue - Please update card")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(.red)
+                                                .padding(.top, 2)
+                                        }
                                     } else {
                                         // Lifetime premium
                                         Text("Lifetime Access")
