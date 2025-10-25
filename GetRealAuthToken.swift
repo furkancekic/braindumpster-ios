@@ -83,7 +83,7 @@ struct GetRealAuthTokenView: View {
 
     private func generateCurlCommand(token: String) -> String {
         return """
-        curl -X POST http://57.129.81.193:5001/api/verify-receipt \\
+        curl -X POST https://api.braindumpster.io/api/verify-receipt \\
           -H "Content-Type: application/json" \\
           -H "Authorization: Bearer \(token)" \\
           -d '{
@@ -131,7 +131,7 @@ func testVerifyReceiptEndpoint() async {
         print("📦 Receipt size: \(receiptData.count) bytes")
 
         // Prepare request
-        let url = URL(string: "http://57.129.81.193:5001/api/verify-receipt")!
+        let url = URL(string: "https://api.braindumpster.io/api/verify-receipt")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

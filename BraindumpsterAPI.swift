@@ -4,10 +4,11 @@ class BraindumpsterAPI {
     static let shared = BraindumpsterAPI()
 
     // MARK: - Configuration
-    // Production API
-    private let baseURL = "http://57.129.81.193:5001/api"
+    // Production API - braindumpster.io domain
+    private let baseURL = "https://api.braindumpster.io/api"
 
     // Local development: http://localhost:5001/api
+    // Old server: http://57.129.81.193:5001/api
 
     private init() {}
 

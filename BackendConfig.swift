@@ -4,8 +4,8 @@ import Foundation
 struct BackendConfig {
     /// Backend base URL (same as BraindumpsterAPI)
     static var baseURL: String {
-        // Production API (same server for all environments)
-        return "http://57.129.81.193:5001/api"
+        // Production API - braindumpster.io domain
+        return "https://api.braindumpster.io/api"
     }
 
     /// Auth token for backend API
