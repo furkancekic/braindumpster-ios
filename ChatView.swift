@@ -702,6 +702,10 @@ struct SuggestionCard: View {
             return "exclamationmark.triangle.fill"
         case "info", "information":
             return "info.circle.fill"
+        case "optimization":
+            return "slider.horizontal.3"
+        case "alternative":
+            return "arrow.triangle.branch"
         case "additional":
             return "lightbulb.fill"
         default:
@@ -715,6 +719,10 @@ struct SuggestionCard: View {
             return Color(red: 0.95, green: 0.61, blue: 0.07)
         case "info", "information":
             return Color(red: 0.35, green: 0.75, blue: 0.95)
+        case "optimization":
+            return Color(red: 0.20, green: 0.78, blue: 0.35)
+        case "alternative":
+            return Color(red: 0.69, green: 0.32, blue: 0.87)
         case "additional":
             return Color(red: 0.58, green: 0.40, blue: 0.93)
         default:

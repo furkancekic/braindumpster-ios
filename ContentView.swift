@@ -74,7 +74,7 @@ struct ContentView: View {
                                     .multilineTextAlignment(.center)
                                     .padding()
                             } else {
-                                List {
+                                LazyVStack(spacing: 10) {
                                     ForEach(viewModel.tasks) { task in
                                         TaskCardView(
                                             task: task,
@@ -96,9 +96,6 @@ struct ContentView: View {
                                                 showConfetti = true
                                             }
                                         )
-                                        .listRowInsets(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
-                                        .listRowSeparator(.hidden)
-                                        .listRowBackground(Color.clear)
                                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                                             Button {
                                                 HapticFeedback.light()
@@ -118,10 +115,6 @@ struct ContentView: View {
                                         }
                                     }
                                 }
-                                .listStyle(.plain)
-                                .scrollContentBackground(.hidden)
-                                .scrollDisabled(true)
-                                .frame(height: calculateTaskListHeight(tasks: viewModel.tasks, expandedTaskIds: expandedTaskIds))
                                 .padding(.horizontal, 18)
                             }
                         }
@@ -150,7 +143,7 @@ struct ContentView: View {
                                 }
                                 .padding(.horizontal, 18)
 
-                                List {
+                                LazyVStack(spacing: 10) {
                                     ForEach(viewModel.overdueTasks) { task in
                                         TaskCardView(
                                             task: task,
@@ -172,9 +165,6 @@ struct ContentView: View {
                                                 showConfetti = true
                                             }
                                         )
-                                        .listRowInsets(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
-                                        .listRowSeparator(.hidden)
-                                        .listRowBackground(Color.clear)
                                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                                             Button {
                                                 HapticFeedback.light()
@@ -194,10 +184,6 @@ struct ContentView: View {
                                         }
                                     }
                                 }
-                                .listStyle(.plain)
-                                .scrollContentBackground(.hidden)
-                                .scrollDisabled(true)
-                                .frame(height: calculateTaskListHeight(tasks: viewModel.overdueTasks, expandedTaskIds: expandedTaskIds))
                                 .padding(.horizontal, 18)
                             }
                             .padding(.top, 12)
@@ -217,12 +203,9 @@ struct ContentView: View {
                                 .padding(.horizontal, 18)
 
                             if !viewModel.completedTasks.isEmpty {
-                                List {
+                                LazyVStack(spacing: 10) {
                                     ForEach(viewModel.completedTasks) { task in
                                         CompletedTaskCard(task: task, viewModel: viewModel)
-                                            .listRowInsets(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
-                                            .listRowSeparator(.hidden)
-                                            .listRowBackground(Color.clear)
                                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                                 Button(role: .destructive) {
                                                     handleTaskDeletion(task)
@@ -243,10 +226,6 @@ struct ContentView: View {
                                             }
                                     }
                                 }
-                                .listStyle(.plain)
-                                .scrollContentBackground(.hidden)
-                                .scrollDisabled(true)
-                                .frame(height: CGFloat(viewModel.completedTasks.count) * 70)
                                 .padding(.horizontal, 18)
                             }
                         }
@@ -586,7 +565,7 @@ struct TaskCardView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Main card content
-            HStack(spacing: 14) {
+            HStack(spacing: 8) { // Reduced from 14 to 8 for better space usage
                 // Checkbox button
                 Button(action: {
                     HapticFeedback.success()
@@ -599,6 +578,8 @@ struct TaskCardView: View {
                         .stroke(Color(white: 0.75), lineWidth: 2)
                         .frame(width: 24, height: 24)
                 }
+                .frame(width: 44, height: 44) // Larger hit area (Apple HIG minimum)
+                .contentShape(Rectangle()) // Make entire frame tappable
                 .buttonStyle(PlainButtonStyle())
 
                 // Task details button
@@ -609,20 +590,30 @@ struct TaskCardView: View {
                         Text(task.title)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.black)
+                            .lineLimit(2) // Max 2 lines for title
+                            .multilineTextAlignment(.leading)
 
-                        HStack(spacing: 10) {
+                        HStack(spacing: 6) {
+                            // Time - never truncate
                             HStack(spacing: 3) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 13))
+                                    .foregroundColor(Color(white: 0.5))
                                 Text(task.time)
                                     .font(.system(size: 13))
+                                    .foregroundColor(Color(white: 0.5))
                             }
-                            .foregroundColor(Color(white: 0.5))
+                            .fixedSize() // Never break or truncate time
+                            .layoutPriority(2) // Highest priority
 
+                            // Category - can be truncated
                             Text(task.category)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(white: 0.5))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
 
+                            // Bell count - never truncate
                             HStack(spacing: 3) {
                                 Image(systemName: "bell")
                                     .font(.system(size: 13))
@@ -630,8 +621,10 @@ struct TaskCardView: View {
                                     .font(.system(size: 13))
                             }
                             .foregroundColor(Color(red: 0.4, green: 0.7, blue: 1.0))
+                            .fixedSize() // Never break bell count
+                            .layoutPriority(2) // Highest priority
 
-                            // Priority indicator
+                            // Priority indicator - never break this!
                             Text(task.priority.capitalized)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.white)
@@ -639,6 +632,8 @@ struct TaskCardView: View {
                                 .padding(.vertical, 3)
                                 .background(priorityColor)
                                 .cornerRadius(6)
+                                .fixedSize() // Prevent word breaking
+                                .layoutPriority(2) // Highest priority
                         }
                     }
                 }
@@ -656,11 +651,12 @@ struct TaskCardView: View {
                         .foregroundColor(Color(white: 0.6))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                         .frame(width: 44, height: 44)
+                        .contentShape(Rectangle()) // Make entire frame tappable
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 12) // Reduced from 16 to 12 for more content space
+            .padding(.vertical, 14) // Reduced from 16 to 14 for tighter layout
 
             // Expanded reminders section
             if isExpanded && !task.reminders.isEmpty {
@@ -800,6 +796,8 @@ struct CompletedTaskCard: View {
                         .foregroundColor(.white)
                 }
             }
+            .frame(width: 44, height: 44) // Larger hit area (Apple HIG minimum)
+            .contentShape(Rectangle()) // Make entire frame tappable
             .buttonStyle(PlainButtonStyle())
 
             Text(task.title)
@@ -1048,6 +1046,12 @@ struct CalendarWidget: View {
             .padding(18)
             .background(Color.white)
             .cornerRadius(18)
+            .contentShape(Rectangle()) // Make entire card tappable
+            .onTapGesture {
+                // Open calendar detail when tapping anywhere on calendar card
+                // (except when tapping on specific day buttons)
+                onViewAll()
+            }
         }
     }
 }
@@ -1106,33 +1110,6 @@ struct BottomActionButtons: View {
         }
         .padding(.horizontal, 20)
     }
-}
-
-// MARK: - Helper Functions
-func calculateTaskListHeight(tasks: [Task], expandedTaskIds: Set<String>) -> CGFloat {
-    var totalHeight: CGFloat = 0
-
-    for task in tasks {
-        // Base task card height
-        totalHeight += 90
-
-        // If task is expanded and has reminders, add their height
-        if expandedTaskIds.contains(task.id) && !task.reminders.isEmpty {
-            // Add divider height
-            totalHeight += 1
-
-            // Add reminders VStack height (each reminder ~70px + 8px spacing)
-            totalHeight += CGFloat(task.reminders.count) * 78
-
-            // Add vertical padding
-            totalHeight += 16
-        }
-
-        // Add spacing between cards
-        totalHeight += 10
-    }
-
-    return totalHeight
 }
 
 // MARK: - Undo Toast View

@@ -29,6 +29,7 @@ struct SettingsView: View {
     @State private var isDeleting = false
     @State private var showDeleteError = false
     @State private var deleteErrorMessage = ""
+    @State private var showDeleteSuccess = false
     @State private var showPremium = false
     @State private var showSubscriptionManagement = false
     @StateObject private var storeManager = NativeStoreManager.shared
@@ -613,6 +614,13 @@ struct SettingsView: View {
         } message: {
             Text(deleteErrorMessage)
         }
+        .overlay(
+            ToastView(
+                message: "Your account has been deleted successfully 👋",
+                type: .success,
+                isShowing: $showDeleteSuccess
+            )
+        )
     }
 
     private func exportUserData() {
@@ -684,23 +692,41 @@ struct SettingsView: View {
                 backendSuccess = true
                 print("✅ Backend deleted account successfully")
 
-                // Step 2: Sign out locally (Auth state listener will update automatically)
-                try authService.signOut()
-
                 await MainActor.run {
                     isDeleting = false
-                    // Dismiss settings - user is now signed out
-                    dismiss()
+
+                    // Show success message FIRST
+                    showDeleteSuccess = true
+
+                    // Wait for toast to be visible (3.5 seconds) then sign out
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                        do {
+                            // Sign out locally after toast is shown
+                            // This will trigger AuthService state listener and show SignInView
+                            try authService.signOut()
+                            print("✅ User signed out - navigating to SignIn")
+                        } catch {
+                            print("⚠️ Sign out error (account already deleted): \(error.localizedDescription)")
+                        }
+                    }
                 }
             } catch {
                 await MainActor.run {
                     isDeleting = false
 
-                    // If backend succeeded but local sign out failed, still dismiss
-                    // User is already deleted from backend
+                    // If backend succeeded but local sign out failed
+                    // User is already deleted from backend, show success anyway
                     if backendSuccess {
-                        print("⚠️ Backend succeeded but local sign out failed - dismissing anyway")
-                        dismiss()
+                        print("⚠️ Backend succeeded, showing success message")
+
+                        // Show success message
+                        showDeleteSuccess = true
+
+                        // Give time for toast to be visible, then force sign out
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                            try? authService.signOut()
+                            print("✅ User signed out after retry")
+                        }
                     } else {
                         // Backend deletion failed - show error
                         deleteErrorMessage = error.localizedDescription
