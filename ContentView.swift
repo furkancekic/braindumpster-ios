@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var showChat = false
     @State private var showSettings = false
     @State private var showCalendarDetail = false
+    @State private var showMeetingRecorder = false
     @State private var selectedCalendarDate: Int = 0
     @State private var expandedTaskIds: Set<String> = []
     @State private var selectedTask: Task?
@@ -39,9 +40,14 @@ struct ContentView: View {
                         StreakCardView()
                             .padding(.horizontal, 18)
 
-                        // AI Assistant Card
-                        AIAssistantCard()
-                            .padding(.horizontal, 18)
+                        // AI Assistant Card - Meeting Recorder
+                        Button(action: {
+                            showMeetingRecorder = true
+                        }) {
+                            AIAssistantCard()
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 18)
 
                         // Calendar Widget
                         CalendarWidget(
@@ -278,6 +284,12 @@ struct ContentView: View {
             if let task = taskToSnooze {
                 SnoozeOptionsView(task: task, viewModel: viewModel)
             }
+        }
+        .fullScreenCover(isPresented: $showMeetingRecorder, onDismiss: {
+            // Refresh tasks when meeting recorder is dismissed
+            viewModel.fetchTasks()
+        }) {
+            MeetingRecorderHomeView()
         }
         .overlay {
             if streakManager.showMilestone, let milestone = streakManager.milestoneReached {
