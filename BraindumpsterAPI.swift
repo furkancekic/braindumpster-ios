@@ -1173,6 +1173,8 @@ struct RegisterResponse: Codable {
 
 struct ErrorResponse: Codable {
     let error: String
+    let details: String?
+    let traceback: String?
 }
 
 struct TasksResponse: Codable {
@@ -1587,7 +1589,17 @@ extension BraindumpsterAPI {
         }
 
         guard httpResponse.statusCode == 200 else {
+            // Try to decode error response with full details
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                print("🔴 [analyzeRecording] Server Error:")
+                print("   Error: \(errorResponse.error)")
+                if let details = errorResponse.details {
+                    print("   Details: \(details)")
+                }
+                if let traceback = errorResponse.traceback {
+                    print("   Backend Traceback:")
+                    print("   \(traceback)")
+                }
                 throw APIError.serverError(errorResponse.error)
             }
             throw APIError.httpError(httpResponse.statusCode)
@@ -1634,7 +1646,17 @@ extension BraindumpsterAPI {
         }
 
         guard httpResponse.statusCode == 200 else {
+            // Try to decode error response with full details
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                print("🔴 [getRecordings] Server Error:")
+                print("   Error: \(errorResponse.error)")
+                if let details = errorResponse.details {
+                    print("   Details: \(details)")
+                }
+                if let traceback = errorResponse.traceback {
+                    print("   Backend Traceback:")
+                    print("   \(traceback)")
+                }
                 throw APIError.serverError(errorResponse.error)
             }
             throw APIError.httpError(httpResponse.statusCode)
