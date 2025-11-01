@@ -240,9 +240,10 @@ struct MeetingRecorderHomeView: View {
             .fullScreenCover(item: $selectedRecording) { recording in
                 RecordingDetailView(recording: recording)
             }
-            .sheet(isPresented: $showImportAudio) {
-                // TODO: Import audio sheet
-                Text("Import Audio")
+            .sheet(isPresented: $showImportAudio, onDismiss: {
+                loadRecentRecordings()
+            }) {
+                ImportAudioView()
             }
         }
         .onAppear {
