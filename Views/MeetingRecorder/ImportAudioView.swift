@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import AVFoundation
+import CoreMedia
 
 struct ImportAudioView: View {
     @Environment(\.dismiss) var dismiss
@@ -243,14 +244,10 @@ struct ImportAudioView: View {
     }
 
     private func getAudioDuration(url: URL) -> TimeInterval {
-        do {
-            let asset = AVURLAsset(url: url)
-            let duration = try asset.load(.duration)
-            return CMTimeGetSeconds(duration)
-        } catch {
-            print("⚠️ Could not get audio duration: \(error.localizedDescription)")
-            return 0
-        }
+        // Use synchronous approach for AVAsset duration
+        let asset = AVURLAsset(url: url)
+        let duration = asset.duration
+        return CMTimeGetSeconds(duration)
     }
 }
 
