@@ -5,7 +5,9 @@ struct MeetingRecorderHomeView: View {
     @State private var showRecordingView = false
     @State private var showAllRecordings = false
     @State private var showImportAudio = false
-    @State private var recentRecordings: [Recording] = [] // TODO: Load from backend
+    @State private var recentRecordings: [Recording] = []
+    @State private var isLoadingRecordings = false
+    @State private var selectedRecording: Recording? = nil
 
     var body: some View {
         NavigationView {
@@ -209,8 +211,13 @@ struct MeetingRecorderHomeView: View {
                             } else {
                                 VStack(spacing: 12) {
                                     ForEach(recentRecordings.prefix(3)) { recording in
-                                        RecordingCard(recording: recording)
-                                            .padding(.horizontal, 20)
+                                        Button(action: {
+                                            selectedRecording = recording
+                                        }) {
+                                            RecordingCard(recording: recording)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .padding(.horizontal, 20)
                                     }
                                 }
                             }
@@ -220,11 +227,18 @@ struct MeetingRecorderHomeView: View {
                 }
             }
             .navigationBarHidden(true)
-            .fullScreenCover(isPresented: $showRecordingView) {
+            .fullScreenCover(isPresented: $showRecordingView, onDismiss: {
+                loadRecentRecordings()
+            }) {
                 RecordingView()
             }
-            .fullScreenCover(isPresented: $showAllRecordings) {
+            .fullScreenCover(isPresented: $showAllRecordings, onDismiss: {
+                loadRecentRecordings()
+            }) {
                 AllRecordingsView()
+            }
+            .fullScreenCover(item: $selectedRecording) { recording in
+                RecordingDetailView(recording: recording)
             }
             .sheet(isPresented: $showImportAudio) {
                 // TODO: Import audio sheet
@@ -255,9 +269,25 @@ struct MeetingRecorderHomeView: View {
     }
 
     private func loadRecentRecordings() {
-        // TODO: Load from backend
-        // For now, empty
-        recentRecordings = []
+        isLoadingRecordings = true
+
+        _Concurrency.Task {
+            do {
+                let recordings = try await BraindumpsterAPI.shared.getRecordings(limit: 3)
+
+                await MainActor.run {
+                    recentRecordings = recordings
+                    isLoadingRecordings = false
+                }
+            } catch {
+                print("❌ Error loading recordings: \(error.localizedDescription)")
+
+                await MainActor.run {
+                    recentRecordings = []
+                    isLoadingRecordings = false
+                }
+            }
+        }
     }
 }
 

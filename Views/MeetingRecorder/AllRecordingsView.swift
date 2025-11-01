@@ -4,8 +4,9 @@ struct AllRecordingsView: View {
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
     @State private var selectedFilter: RecordingType? = nil
-    @State private var recordings: [Recording] = [] // TODO: Load from backend
+    @State private var recordings: [Recording] = []
     @State private var selectedRecording: Recording? = nil
+    @State private var isLoadingRecordings = false
 
     var filteredRecordings: [Recording] {
         var result = recordings
@@ -80,6 +81,7 @@ struct AllRecordingsView: View {
                                     isSelected: selectedFilter == nil,
                                     action: {
                                         selectedFilter = nil
+                                        loadRecordings()
                                     }
                                 )
 
@@ -90,6 +92,7 @@ struct AllRecordingsView: View {
                                     isSelected: selectedFilter == .meeting,
                                     action: {
                                         selectedFilter = .meeting
+                                        loadRecordings()
                                     }
                                 )
 
@@ -100,6 +103,7 @@ struct AllRecordingsView: View {
                                     isSelected: selectedFilter == .lecture,
                                     action: {
                                         selectedFilter = .lecture
+                                        loadRecordings()
                                     }
                                 )
 
@@ -110,6 +114,7 @@ struct AllRecordingsView: View {
                                     isSelected: selectedFilter == .personal,
                                     action: {
                                         selectedFilter = .personal
+                                        loadRecordings()
                                     }
                                 )
                             }
@@ -159,7 +164,9 @@ struct AllRecordingsView: View {
                 }
             }
             .navigationBarHidden(true)
-            .fullScreenCover(item: $selectedRecording) { recording in
+            .fullScreenCover(item: $selectedRecording, onDismiss: {
+                loadRecordings()
+            }) { recording in
                 RecordingDetailView(recording: recording)
             }
         }
@@ -169,9 +176,28 @@ struct AllRecordingsView: View {
     }
 
     private func loadRecordings() {
-        // TODO: Load from backend
-        // For now, empty
-        recordings = []
+        isLoadingRecordings = true
+
+        _Concurrency.Task {
+            do {
+                let fetchedRecordings = try await BraindumpsterAPI.shared.getRecordings(
+                    type: selectedFilter,
+                    limit: 50
+                )
+
+                await MainActor.run {
+                    recordings = fetchedRecordings
+                    isLoadingRecordings = false
+                }
+            } catch {
+                print("❌ Error loading recordings: \(error.localizedDescription)")
+
+                await MainActor.run {
+                    recordings = []
+                    isLoadingRecordings = false
+                }
+            }
+        }
     }
 }
 

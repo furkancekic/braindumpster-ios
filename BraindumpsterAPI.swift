@@ -1533,4 +1533,200 @@ extension BraindumpsterAPI {
 
         print("✅ Timezone updated successfully in backend: \(timezone)")
     }
+
+    // MARK: - Meeting Recorder Endpoints
+
+    /// Upload and analyze audio recording
+    func analyzeRecording(audioFileURL: URL, duration: TimeInterval) async throws -> Recording {
+        let endpoint = "\(baseURL)/meetings/analyze"
+
+        // Get Firebase auth token
+        let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            AuthService.shared.getIdToken { result in
+                continuation.resume(with: result)
+            }
+        }
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        // Create multipart form data
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        // Add audio file
+        let audioData = try Data(contentsOf: audioFileURL)
+        let filename = audioFileURL.lastPathComponent
+        let mimeType = getMimeType(for: audioFileURL)
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(audioData)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // Add duration
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"duration\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(Int(duration))".data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw APIError.serverError(errorResponse.error)
+            }
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        // Decode response
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        struct AnalyzeResponse: Codable {
+            let success: Bool
+            let recordingId: String
+            let recording: Recording
+        }
+
+        let analyzeResponse = try decoder.decode(AnalyzeResponse.self, from: data)
+        return analyzeResponse.recording
+    }
+
+    /// Get all recordings for user
+    func getRecordings(type: RecordingType? = nil, limit: Int = 50) async throws -> [Recording] {
+        var endpoint = "\(baseURL)/meetings?limit=\(limit)"
+        if let type = type {
+            endpoint += "&type=\(type.rawValue)"
+        }
+
+        // Get Firebase auth token
+        let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            AuthService.shared.getIdToken { result in
+                continuation.resume(with: result)
+            }
+        }
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw APIError.serverError(errorResponse.error)
+            }
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        // Decode response
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        struct RecordingsResponse: Codable {
+            let success: Bool
+            let recordings: [Recording]
+            let count: Int
+        }
+
+        let recordingsResponse = try decoder.decode(RecordingsResponse.self, from: data)
+        return recordingsResponse.recordings
+    }
+
+    /// Delete a recording
+    func deleteRecording(_ recordingId: String) async throws {
+        let endpoint = "\(baseURL)/meetings/\(recordingId)"
+
+        // Get Firebase auth token
+        let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            AuthService.shared.getIdToken { result in
+                continuation.resume(with: result)
+            }
+        }
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw APIError.serverError(errorResponse.error)
+            }
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+    }
+
+    /// Ask AI about a recording
+    func chatWithRecording(recordingId: String, message: String) async throws -> String {
+        let endpoint = "\(baseURL)/meetings/\(recordingId)/chat"
+
+        // Get Firebase auth token
+        let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            AuthService.shared.getIdToken { result in
+                continuation.resume(with: result)
+            }
+        }
+
+        // Create request
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Create body
+        let body: [String: Any] = ["message": message]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        // Send request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw APIError.serverError(errorResponse.error)
+            }
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        // Decode response
+        struct ChatResponse: Codable {
+            let success: Bool
+            let response: String
+        }
+
+        let chatResponse = try JSONDecoder().decode(ChatResponse.self, from: data)
+        return chatResponse.response
+    }
 }

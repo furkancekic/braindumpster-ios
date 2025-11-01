@@ -8,6 +8,8 @@ struct RecordingDetailView: View {
     @State private var showInsightsExpanded = false
     @State private var actionItems: [ActionItem]
     @State private var showShareSheet = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeleting = false
 
     init(recording: Recording) {
         self.recording = recording
@@ -51,7 +53,7 @@ struct RecordingDetailView: View {
                                         Label("Export", systemImage: "arrow.down.doc")
                                     }
                                     Button(role: .destructive, action: {
-                                        // TODO: Delete
+                                        showDeleteConfirmation = true
                                     }) {
                                         Label("Delete", systemImage: "trash")
                                     }
@@ -367,6 +369,58 @@ struct RecordingDetailView: View {
             .navigationBarHidden(true)
             .sheet(isPresented: $showAskAI) {
                 AskAISheet(recording: recording)
+            }
+            .alert("Delete Recording?", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    deleteRecording()
+                }
+            } message: {
+                Text("This recording and all its data will be permanently deleted. This action cannot be undone.")
+            }
+            .overlay {
+                if isDeleting {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+
+                            Text("Deleting...")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(32)
+                        .background(Color(white: 0.2))
+                        .cornerRadius(16)
+                    }
+                }
+            }
+        }
+    }
+
+    private func deleteRecording() {
+        isDeleting = true
+
+        _Concurrency.Task {
+            do {
+                try await BraindumpsterAPI.shared.deleteRecording(recording.id)
+
+                print("✅ Recording deleted successfully")
+
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                print("❌ Error deleting recording: \(error.localizedDescription)")
+
+                await MainActor.run {
+                    isDeleting = false
+                    // TODO: Show error toast
+                }
             }
         }
     }

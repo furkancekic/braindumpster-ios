@@ -187,12 +187,28 @@ struct AskAISheet: View {
         userInput = ""
         isLoading = true
 
-        // Simulate AI response (TODO: Call backend API)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Mock response based on recording data
-            let answer = generateMockAnswer(for: question)
-            messages.append(AIMessage(text: answer, isUser: false))
-            isLoading = false
+        // Call backend API
+        _Concurrency.Task {
+            do {
+                let answer = try await BraindumpsterAPI.shared.chatWithRecording(
+                    recordingId: recording.id,
+                    message: question
+                )
+
+                await MainActor.run {
+                    messages.append(AIMessage(text: answer, isUser: false))
+                    isLoading = false
+                }
+            } catch {
+                print("❌ Error chatting with AI: \(error.localizedDescription)")
+
+                // Fallback to mock answer
+                await MainActor.run {
+                    let answer = generateMockAnswer(for: question)
+                    messages.append(AIMessage(text: answer, isUser: false))
+                    isLoading = false
+                }
+            }
         }
     }
 
@@ -236,61 +252,6 @@ struct AIMessage: Identifiable {
     let id = UUID()
     let text: String
     let isUser: Bool
-}
-
-// MARK: - Message Bubbles (matching ChatView style)
-struct UserMessageBubble: View {
-    let text: String
-
-    var body: some View {
-        HStack {
-            Spacer()
-
-            Text(text)
-                .font(.system(size: 15))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.35, green: 0.75, blue: 0.95),
-                            Color(red: 0.45, green: 0.55, blue: 0.95)
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(16)
-                .frame(maxWidth: .infinity * 0.75, alignment: .trailing)
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
-}
-
-struct AIMessageBubble: View {
-    let text: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // AI Icon
-            Image(systemName: "sparkles")
-                .font(.system(size: 14))
-                .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
-                .frame(width: 28, height: 28)
-
-            // Message Bubble
-            Text(text)
-                .font(.system(size: 15))
-                .foregroundColor(.black)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(white: 0.96))
-                .cornerRadius(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 }
 
 #Preview {

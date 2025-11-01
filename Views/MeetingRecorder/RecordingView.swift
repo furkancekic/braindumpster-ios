@@ -5,7 +5,6 @@ struct RecordingView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var audioRecorder = AudioRecorder()
     @State private var isRecording = false
-    @State private var isPaused = false
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
     @State private var showStopConfirmation = false
@@ -88,27 +87,21 @@ struct RecordingView: View {
                             // Pulsing red circle
                             ZStack {
                                 Circle()
-                                    .fill(Color.red.opacity(isPaused ? 0.3 : 0.5))
+                                    .fill(Color.red.opacity(0.5))
                                     .frame(width: 140, height: 140)
-                                    .scaleEffect(isPaused ? 1.0 : 1.1)
+                                    .scaleEffect(1.1)
                                     .animation(
-                                        isPaused ? .default : .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
-                                        value: isPaused
+                                        .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
+                                        value: isRecording
                                     )
 
                                 Circle()
                                     .fill(Color.red)
                                     .frame(width: 80, height: 80)
 
-                                if !isPaused {
-                                    Image(systemName: "waveform")
-                                        .font(.system(size: 32))
-                                        .foregroundColor(.white)
-                                } else {
-                                    Image(systemName: "pause.fill")
-                                        .font(.system(size: 32))
-                                        .foregroundColor(.white)
-                                }
+                                Image(systemName: "waveform")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
                             }
 
                             // Timer
@@ -117,7 +110,7 @@ struct RecordingView: View {
                                 .foregroundColor(.white)
                                 .monospacedDigit()
 
-                            Text(isPaused ? "Paused" : "Recording...")
+                            Text("Recording...")
                                 .font(.system(size: 18))
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -128,26 +121,8 @@ struct RecordingView: View {
 
                 // Control buttons
                 if !isProcessing {
-                    HStack(spacing: 32) {
+                    VStack(spacing: 12) {
                         if isRecording {
-                            // Pause/Resume button
-                            Button(action: {
-                                togglePause()
-                            }) {
-                                VStack(spacing: 8) {
-                                    Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                                        .font(.system(size: 28))
-                                        .foregroundColor(.white)
-                                        .frame(width: 70, height: 70)
-                                        .background(Color.white.opacity(0.2))
-                                        .cornerRadius(35)
-
-                                    Text(isPaused ? "Resume" : "Pause")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                            }
-
                             // Stop button
                             Button(action: {
                                 showStopConfirmation = true
@@ -156,13 +131,13 @@ struct RecordingView: View {
                                     Image(systemName: "stop.fill")
                                         .font(.system(size: 28))
                                         .foregroundColor(.white)
-                                        .frame(width: 70, height: 70)
+                                        .frame(width: 80, height: 80)
                                         .background(Color.red)
-                                        .cornerRadius(35)
+                                        .cornerRadius(40)
 
-                                    Text("Stop")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.white.opacity(0.8))
+                                    Text("Stop Recording")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white.opacity(0.9))
                                 }
                             }
                         } else {
@@ -217,39 +192,55 @@ struct RecordingView: View {
     private func startRecording() {
         audioRecorder.startRecording()
         isRecording = true
-        isPaused = false
         recordingDuration = 0
 
         // Start timer
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if !isPaused {
-                recordingDuration += 1
-            }
+            recordingDuration += 1
         }
-    }
-
-    private func togglePause() {
-        if isPaused {
-            audioRecorder.resumeRecording()
-        } else {
-            audioRecorder.pauseRecording()
-        }
-        isPaused.toggle()
     }
 
     private func stopRecording() {
         timer?.invalidate()
         timer = nil
         isRecording = false
+
+        // Get audio file URL before stopping
+        guard let audioURL = audioRecorder.getRecordingURL() else {
+            print("❌ No recording URL found")
+            dismiss()
+            return
+        }
+
         audioRecorder.stopRecording()
 
         // Show processing state
         isProcessing = true
 
-        // Simulate processing (TODO: Upload to backend and get analysis)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            // Close and return to home
-            dismiss()
+        // Upload to backend and get analysis
+        _Concurrency.Task {
+            do {
+                print("📤 Uploading recording to backend...")
+                let recording = try await BraindumpsterAPI.shared.analyzeRecording(
+                    audioFileURL: audioURL,
+                    duration: recordingDuration
+                )
+
+                print("✅ Recording analyzed successfully: \(recording.title)")
+
+                // Close view - home screen will refresh and show new recording
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                print("❌ Error analyzing recording: \(error.localizedDescription)")
+
+                // Show error and close
+                await MainActor.run {
+                    // TODO: Show error toast
+                    dismiss()
+                }
+            }
         }
     }
 }
