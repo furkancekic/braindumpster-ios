@@ -340,8 +340,9 @@ struct RecordingCard: View {
             }
         }
         .padding(16)
-        .background(Color(white: 0.97))
+        .background(Color.white)
         .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
     }
 }
 
