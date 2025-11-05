@@ -24,6 +24,8 @@ struct RecordingView: View {
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var analyzedRecording: Recording?
+    @State private var showRecordingDetail = false
 
     var body: some View {
         ZStack {
@@ -207,6 +209,14 @@ struct RecordingView: View {
             )
             .background(ClearBackgroundView())
         }
+        .fullScreenCover(isPresented: $showRecordingDetail, onDismiss: {
+            // When detail view is dismissed, go back to home
+            dismiss()
+        }) {
+            if let recording = analyzedRecording {
+                RecordingDetailView(recording: recording)
+            }
+        }
     }
 
     private var formattedDuration: String {
@@ -260,9 +270,11 @@ struct RecordingView: View {
 
                 print("✅ Recording analyzed successfully: \(recording.title)")
 
-                // Close view - home screen will refresh and show new recording
+                // Show recording detail view
                 await MainActor.run {
-                    dismiss()
+                    isProcessing = false
+                    analyzedRecording = recording
+                    showRecordingDetail = true
                 }
             } catch {
                 print("❌ Error analyzing recording: \(error.localizedDescription)")

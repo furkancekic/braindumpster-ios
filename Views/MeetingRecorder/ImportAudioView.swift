@@ -24,6 +24,8 @@ struct ImportAudioView: View {
     @State private var selectedFileURL: URL?
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var analyzedRecording: Recording?
+    @State private var showRecordingDetail = false
 
     var body: some View {
         ZStack {
@@ -210,6 +212,14 @@ struct ImportAudioView: View {
             )
             .background(ClearBackgroundViewForImport())
         }
+        .fullScreenCover(isPresented: $showRecordingDetail, onDismiss: {
+            // When detail view is dismissed, go back to home
+            dismiss()
+        }) {
+            if let recording = analyzedRecording {
+                RecordingDetailView(recording: recording)
+            }
+        }
     }
 
     private func uploadAudioFile(_ url: URL) {
@@ -235,7 +245,8 @@ struct ImportAudioView: View {
 
                 await MainActor.run {
                     isUploading = false
-                    dismiss()
+                    analyzedRecording = recording
+                    showRecordingDetail = true
                 }
             } catch {
                 print("❌ Error uploading audio: \(error.localizedDescription)")
