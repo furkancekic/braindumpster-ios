@@ -1553,6 +1553,7 @@ extension BraindumpsterAPI {
         var request = URLRequest(url: URL(string: endpoint)!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 300 // 5 minutes - audio analysis with Gemini can take time
 
         // Create multipart form data
         let boundary = "Boundary-\(UUID().uuidString)"
