@@ -57,20 +57,31 @@ struct SubscriptionManagementView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(viewModel.errorMessage)
+            .fullScreenCover(isPresented: $viewModel.showError) {
+                ErrorView(
+                    title: "Error",
+                    message: viewModel.errorMessage,
+                    primaryButtonTitle: "OK",
+                    secondaryButtonTitle: nil,
+                    onPrimaryAction: {}
+                )
+                .background(ClearBackgroundViewForSubscription())
             }
-            .alert("Cancel Subscription?", isPresented: $viewModel.showCancelConfirmation) {
-                Button("Cancel Subscription", role: .destructive) {
-                    _Concurrency.Task {
-                        await viewModel.cancelSubscription()
-                    }
-                }
-                Button("Keep Subscription", role: .cancel) {}
-            } message: {
-                Text("You'll keep premium access until \(viewModel.subscription?.expirationDate?.formatted(date: .long, time: .omitted) ?? "expiration")")
+            .fullScreenCover(isPresented: $viewModel.showCancelConfirmation) {
+                ConfirmationView(
+                    title: "Cancel Subscription?",
+                    message: "You'll keep premium access until \(viewModel.subscription?.expirationDate?.formatted(date: .long, time: .omitted) ?? "expiration")",
+                    confirmButtonTitle: "Cancel Subscription",
+                    cancelButtonTitle: "Keep Subscription",
+                    isDestructive: true,
+                    onConfirm: {
+                        _Concurrency.Task {
+                            await viewModel.cancelSubscription()
+                        }
+                    },
+                    onCancel: {}
+                )
+                .background(ClearBackgroundViewForSubscription())
             }
         }
         .onAppear {
@@ -561,4 +572,17 @@ class SubscriptionManagementViewModel: ObservableObject {
 
         isLoading = false
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForSubscription: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }

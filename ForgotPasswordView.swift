@@ -161,10 +161,15 @@ struct ForgotPasswordView: View {
             }
             .animation(.spring(response: 0.5, dampingFraction: 0.7), value: showSuccessMessage)
         )
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage)
+        .fullScreenCover(isPresented: $showError) {
+            ErrorView(
+                title: "Reset Failed",
+                message: errorMessage,
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {}
+            )
+            .background(ClearBackgroundViewForForgotPassword())
         }
     }
 
@@ -190,6 +195,19 @@ struct ForgotPasswordView: View {
             }
         }
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForForgotPassword: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 #Preview {

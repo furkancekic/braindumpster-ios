@@ -284,10 +284,15 @@ struct SignUpView: View {
             .sheet(isPresented: $showTermsOfService) {
                 TermsOfServiceView()
             }
-            .alert("Error", isPresented: $showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
+            .fullScreenCover(isPresented: $showError) {
+                ErrorView(
+                    title: "Sign Up Failed",
+                    message: errorMessage,
+                    primaryButtonTitle: "OK",
+                    secondaryButtonTitle: nil,
+                    onPrimaryAction: {}
+                )
+                .background(ClearBackgroundViewForSignUp())
             }
     }
 
@@ -455,6 +460,19 @@ struct SignUpView: View {
 
         return hashString
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForSignUp: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 #Preview {

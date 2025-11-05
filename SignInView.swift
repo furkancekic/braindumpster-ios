@@ -271,10 +271,15 @@ struct SignInView: View {
             .sheet(isPresented: $showTermsOfService) {
                 TermsOfServiceView()
             }
-            .alert("Error", isPresented: $showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
+            .fullScreenCover(isPresented: $showError) {
+                ErrorView(
+                    title: "Sign In Failed",
+                    message: errorMessage,
+                    primaryButtonTitle: "OK",
+                    secondaryButtonTitle: nil,
+                    onPrimaryAction: {}
+                )
+                .background(ClearBackgroundViewForSignIn())
             }
     }
 
@@ -517,6 +522,19 @@ struct GoogleLogo: View {
         }
         .frame(width: 24, height: 24)
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForSignIn: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 #Preview {

@@ -228,10 +228,15 @@ struct VoiceInputView: View {
                 .presentationDragIndicator(.hidden)
             }
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage)
+        .fullScreenCover(isPresented: $showError) {
+            ErrorView(
+                title: "Oops!",
+                message: errorMessage,
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {}
+            )
+            .background(ClearBackgroundViewForVoiceInput())
         }
     }
 
@@ -326,6 +331,19 @@ struct VoiceInputView: View {
         let tenths = Int((duration.truncatingRemainder(dividingBy: 1)) * 10)
         return String(format: "%02d:%02d.%d", minutes, seconds, tenths)
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForVoiceInput: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 #Preview {

@@ -536,14 +536,6 @@ struct SettingsView: View {
                             )
                             .padding(.horizontal, 16)
                         }
-                        .alert("Sign Out?", isPresented: $showSignOutAlert) {
-                            Button("Cancel", role: .cancel) {}
-                            Button("Sign Out", role: .destructive) {
-                                signOut()
-                            }
-                        } message: {
-                            Text("You can always sign back in anytime 👋")
-                        }
 
                         // Footer
                         VStack(spacing: 4) {
@@ -588,31 +580,53 @@ struct SettingsView: View {
                 ShareSheet(items: [url])
             }
         }
-        .alert("Export Error", isPresented: $showExportError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(exportErrorMessage)
+        .fullScreenCover(isPresented: $showExportError) {
+            ErrorView(
+                title: "Export Failed",
+                message: exportErrorMessage,
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {}
+            )
+            .background(ClearBackgroundViewForSettings())
         }
-        .alert("Delete Everything?", isPresented: $showDeleteAccountAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete Forever", role: .destructive) {
-                deleteAccount()
-            }
-        } message: {
-            if storeManager.isPremium {
-                if let expirationDate = storeManager.premiumExpirationDate {
-                    Text("⚠️ You have an active subscription until \(expirationDate, formatter: DateFormatter.premiumDate). Your subscription will continue through Apple until expiration.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone.")
-                } else {
-                    Text("⚠️ You have a lifetime premium subscription. Your subscription is managed through Apple.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone.")
-                }
-            } else {
-                Text("This will permanently delete your account and all your tasks. This action cannot be undone.")
-            }
+        .fullScreenCover(isPresented: $showSignOutAlert) {
+            ConfirmationView(
+                title: "Sign Out?",
+                message: "You can always sign back in anytime 👋",
+                confirmButtonTitle: "Sign Out",
+                cancelButtonTitle: "Cancel",
+                isDestructive: true,
+                onConfirm: {
+                    signOut()
+                },
+                onCancel: {}
+            )
+            .background(ClearBackgroundViewForSettings())
         }
-        .alert("Delete Error", isPresented: $showDeleteError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(deleteErrorMessage)
+        .fullScreenCover(isPresented: $showDeleteAccountAlert) {
+            ConfirmationView(
+                title: "Delete Everything?",
+                message: getDeleteAccountMessage(),
+                confirmButtonTitle: "Delete Forever",
+                cancelButtonTitle: "Cancel",
+                isDestructive: true,
+                onConfirm: {
+                    deleteAccount()
+                },
+                onCancel: {}
+            )
+            .background(ClearBackgroundViewForSettings())
+        }
+        .fullScreenCover(isPresented: $showDeleteError) {
+            ErrorView(
+                title: "Delete Failed",
+                message: deleteErrorMessage,
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {}
+            )
+            .background(ClearBackgroundViewForSettings())
         }
         .overlay(
             ToastView(
@@ -621,6 +635,19 @@ struct SettingsView: View {
                 isShowing: $showDeleteSuccess
             )
         )
+    }
+
+    private func getDeleteAccountMessage() -> String {
+        if storeManager.isPremium {
+            if let expirationDate = storeManager.premiumExpirationDate {
+                let dateString = DateFormatter.premiumDate.string(from: expirationDate)
+                return "⚠️ You have an active subscription until \(dateString). Your subscription will continue through Apple until expiration.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone."
+            } else {
+                return "⚠️ You have a lifetime premium subscription. Your subscription is managed through Apple.\n\nThis will permanently delete your account and all your tasks. This action cannot be undone."
+            }
+        } else {
+            return "This will permanently delete your account and all your tasks. This action cannot be undone."
+        }
     }
 
     private func exportUserData() {
@@ -852,6 +879,19 @@ struct SettingsSimpleRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForSettings: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 // MARK: - Share Sheet

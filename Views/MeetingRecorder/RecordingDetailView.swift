@@ -370,13 +370,19 @@ struct RecordingDetailView: View {
             .sheet(isPresented: $showAskAI) {
                 AskAISheet(recording: recording)
             }
-            .alert("Delete Recording?", isPresented: $showDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
-                    deleteRecording()
-                }
-            } message: {
-                Text("This recording and all its data will be permanently deleted. This action cannot be undone.")
+            .fullScreenCover(isPresented: $showDeleteConfirmation) {
+                ConfirmationView(
+                    title: "Delete Recording?",
+                    message: "This recording and all its data will be permanently deleted. This action cannot be undone.",
+                    confirmButtonTitle: "Delete",
+                    cancelButtonTitle: "Cancel",
+                    isDestructive: true,
+                    onConfirm: {
+                        deleteRecording()
+                    },
+                    onCancel: {}
+                )
+                .background(ClearBackgroundViewForRecordingDetail())
             }
             .overlay {
                 if isDeleting {
@@ -669,4 +675,17 @@ struct TranscriptSegmentView: View {
     )
 
     RecordingDetailView(recording: mockRecording)
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForRecordingDetail: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }

@@ -1023,10 +1023,15 @@ struct EditReminderView: View {
                 }
             }
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage)
+        .fullScreenCover(isPresented: $showError) {
+            ErrorView(
+                title: "Error",
+                message: errorMessage,
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {}
+            )
+            .background(ClearBackgroundViewForTaskDetail())
         }
     }
 
@@ -1194,4 +1199,17 @@ struct RoundedCorner: Shape {
         let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
         return Path(path.cgPath)
     }
+}
+
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForTaskDetail: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
