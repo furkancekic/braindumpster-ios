@@ -1616,8 +1616,36 @@ extension BraindumpsterAPI {
             let recording: Recording
         }
 
-        let analyzeResponse = try decoder.decode(AnalyzeResponse.self, from: data)
-        return analyzeResponse.recording
+        // Debug: Print raw response
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📥 Backend Response:")
+            print(responseString.prefix(1000)) // First 1000 chars
+        }
+
+        do {
+            let analyzeResponse = try decoder.decode(AnalyzeResponse.self, from: data)
+            return analyzeResponse.recording
+        } catch {
+            print("❌ JSON Decode Error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("   Missing key: \(key.stringValue)")
+                    print("   Context: \(context.debugDescription)")
+                case .typeMismatch(let type, let context):
+                    print("   Type mismatch: \(type)")
+                    print("   Context: \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                    print("   Value not found: \(type)")
+                    print("   Context: \(context.debugDescription)")
+                case .dataCorrupted(let context):
+                    print("   Data corrupted: \(context.debugDescription)")
+                @unknown default:
+                    print("   Unknown error")
+                }
+            }
+            throw error
+        }
     }
 
     /// Get all recordings for user
