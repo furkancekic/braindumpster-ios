@@ -12,6 +12,7 @@
 		0F6B85339B4BDE3048D04A03 /* AskAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495BA37BF7EBFAD0A8BF9C21 /* AskAISheet.swift */; };
 		151CC7E8D1C7B60DE354F742 /* VoiceInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB86C19F3EA521FA4DBF703 /* VoiceInputView.swift */; };
 		1884B4E1D57417C48289EC9C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB36D2AB94A155B717B1BCE /* ContentView.swift */; };
+		1EB51B2E8344EAF9F1DEAF1D /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3AFCD3E6C725AF06B103A /* ErrorView.swift */; };
 		20DDAF7C5175435E8877FE44 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878446DC5B6D451C8B33C71C /* ColorPalette.swift */; };
 		265A2408A55C269F357FE099 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AA079DC75AD16FF0AC5939 /* AuthService.swift */; };
 		3414B037EDC4CBB9A4FD6258 /* PremiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F40612816B8A14EE7D232A /* PremiumView.swift */; };
@@ -74,6 +75,7 @@
 		495BA37BF7EBFAD0A8BF9C21 /* AskAISheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AskAISheet.swift; path = Views/MeetingRecorder/AskAISheet.swift; sourceTree = "<group>"; };
 		4BB36D2AB94A155B717B1BCE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5240FE56FD18457FA075C2BA /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
+		53F3AFCD3E6C725AF06B103A /* ErrorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ErrorView.swift; path = Views/Components/ErrorView.swift; sourceTree = "<group>"; };
 		543D9009C410F5603B76F081 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
 		589B7D7E7988C75063FE3DB6 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
 		59B4EF728159D868B1138501 /* AllRecordingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AllRecordingsView.swift; path = Views/MeetingRecorder/AllRecordingsView.swift; sourceTree = "<group>"; };
@@ -125,6 +127,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		169F3C60AB731B55B483EC30 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				53F3AFCD3E6C725AF06B103A /* ErrorView.swift */,
+			);
+			name = Components;
+			sourceTree = "<group>";
+		};
 		49986CFEA6641E7391C52C40 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,6 +147,7 @@
 			isa = PBXGroup;
 			children = (
 				C86B2CFF156C6FC08E3F28F4 /* MeetingRecorder */,
+				169F3C60AB731B55B483EC30 /* Components */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -325,6 +336,7 @@
 				96602E95C71AF09F24051A05 /* RecordingDetailView.swift in Sources */,
 				0F6B85339B4BDE3048D04A03 /* AskAISheet.swift in Sources */,
 				FD31A01E544517A8672CCE32 /* ImportAudioView.swift in Sources */,
+				1EB51B2E8344EAF9F1DEAF1D /* ErrorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

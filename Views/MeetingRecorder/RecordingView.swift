@@ -1,6 +1,19 @@
 import SwiftUI
 import AVFoundation
 
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
 struct RecordingView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var audioRecorder = AudioRecorder()
@@ -177,19 +190,22 @@ struct RecordingView: View {
         } message: {
             Text("Your recording will be processed by AI to generate transcripts, summaries, and action items.")
         }
-        .alert("Analysis Failed", isPresented: $showError) {
-            Button("Try Again", role: .cancel) {
-                errorMessage = nil
-                dismiss()
-            }
-            Button("Dismiss") {
-                errorMessage = nil
-                dismiss()
-            }
-        } message: {
-            if let error = errorMessage {
-                Text(error)
-            }
+        .fullScreenCover(isPresented: $showError) {
+            ErrorView(
+                title: "Analysis Failed",
+                message: errorMessage ?? "Unable to analyze recording. Please try again.",
+                primaryButtonTitle: "Try Again",
+                secondaryButtonTitle: "Dismiss",
+                onPrimaryAction: {
+                    errorMessage = nil
+                    dismiss()
+                },
+                onSecondaryAction: {
+                    errorMessage = nil
+                    dismiss()
+                }
+            )
+            .background(ClearBackgroundView())
         }
     }
 

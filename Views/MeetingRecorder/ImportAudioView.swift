@@ -3,6 +3,19 @@ import UniformTypeIdentifiers
 import AVFoundation
 import CoreMedia
 
+// Helper to make fullScreenCover background transparent
+struct ClearBackgroundViewForImport: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
 struct ImportAudioView: View {
     @Environment(\.dismiss) var dismiss
     @State private var showFilePicker = false
@@ -185,14 +198,17 @@ struct ImportAudioView: View {
                 }
             )
         }
-        .alert("Upload Failed", isPresented: $showError) {
-            Button("OK", role: .cancel) {
-                errorMessage = nil
-            }
-        } message: {
-            if let error = errorMessage {
-                Text(error)
-            }
+        .fullScreenCover(isPresented: $showError) {
+            ErrorView(
+                title: "Upload Failed",
+                message: errorMessage ?? "Unable to analyze audio file. Please try again.",
+                primaryButtonTitle: "OK",
+                secondaryButtonTitle: nil,
+                onPrimaryAction: {
+                    errorMessage = nil
+                }
+            )
+            .background(ClearBackgroundViewForImport())
         }
     }
 
