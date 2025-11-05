@@ -270,11 +270,21 @@ struct MeetingRecorderHomeView: View {
     }
 
     private func loadRecentRecordings() {
+        print("🔄 Loading recent recordings...")
         isLoadingRecordings = true
 
         _Concurrency.Task {
             do {
                 let recordings = try await BraindumpsterAPI.shared.getRecordings(limit: 3)
+
+                print("✅ Loaded \(recordings.count) recordings")
+                if recordings.isEmpty {
+                    print("   ⚠️ No recordings found")
+                } else {
+                    for (index, recording) in recordings.enumerated() {
+                        print("   \(index + 1). \(recording.title) - \(recording.date)")
+                    }
+                }
 
                 await MainActor.run {
                     recentRecordings = recordings
