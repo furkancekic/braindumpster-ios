@@ -275,7 +275,7 @@ struct ImportAudioView: View {
                     audioFileURL: url,
                     duration: duration
                 ) { progress in
-                    Task { @MainActor in
+                    _Concurrency.Task { @MainActor in
                         self.uploadProgress = progress
                         print("📊 Upload progress: \(Int(progress * 100))%")
                     }

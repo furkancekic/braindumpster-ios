@@ -1043,7 +1043,7 @@ private class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
         // Upload progress is 0-70%, leave 70-100% for server processing
         let adjustedProgress = progress * 0.7
 
-        Task { @MainActor in
+        _Concurrency.Task { @MainActor in
             progressHandler?(adjustedProgress)
         }
     }
