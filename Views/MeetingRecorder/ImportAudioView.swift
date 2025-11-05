@@ -76,40 +76,50 @@ struct ImportAudioView: View {
                     VStack(spacing: 24) {
                         Spacer()
 
-                        // Progress Circle
+                        // Circular progress indicator with gradient
                         ZStack {
+                            // Background circle
                             Circle()
-                                .stroke(Color(white: 0.9), lineWidth: 8)
-                                .frame(width: 120, height: 120)
+                                .stroke(Color(white: 0.9), lineWidth: 12)
+                                .frame(width: 160, height: 160)
 
+                            // Progress circle with gradient
                             Circle()
                                 .trim(from: 0, to: uploadProgress)
                                 .stroke(
-                                    Color(red: 0.35, green: 0.61, blue: 0.95),
-                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(red: 0.35, green: 0.61, blue: 0.95),
+                                            Color(red: 0.25, green: 0.51, blue: 0.85)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
                                 )
-                                .frame(width: 120, height: 120)
+                                .frame(width: 160, height: 160)
                                 .rotationEffect(.degrees(-90))
-                                .animation(.linear, value: uploadProgress)
+                                .animation(.easeInOut(duration: 0.3), value: uploadProgress)
 
+                            // Percentage text and icon
                             VStack(spacing: 4) {
                                 Text("\(Int(uploadProgress * 100))%")
-                                    .font(.system(size: 28, weight: .bold))
+                                    .font(.system(size: 36, weight: .bold))
                                     .foregroundColor(.black)
 
-                                Text("Uploading")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color(white: 0.5))
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(Color(red: 0.35, green: 0.61, blue: 0.95))
                             }
                         }
 
-                        VStack(spacing: 8) {
+                        VStack(spacing: 12) {
                             Text("Analyzing audio...")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.black)
 
                             Text("AI is transcribing and creating insights")
-                                .font(.system(size: 14))
+                                .font(.system(size: 15))
                                 .foregroundColor(Color(white: 0.5))
                         }
 
@@ -226,14 +236,42 @@ struct ImportAudioView: View {
         isUploading = true
         uploadProgress = 0.0
 
+        print("📤 Starting upload for file: \(url.lastPathComponent)")
+
+        // Check file size (limit to 100MB for long recordings)
+        guard let fileSize = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 else {
+            print("❌ Could not determine file size")
+            showErrorMessage("Unable to read file. Please try again.")
+            return
+        }
+
+        let fileSizeMB = Double(fileSize) / (1024 * 1024)
+        print("📊 File size: \(String(format: "%.2f", fileSizeMB)) MB")
+
+        if fileSizeMB > 100 {
+            print("❌ File too large: \(fileSizeMB) MB")
+            showErrorMessage("File is too large (\(String(format: "%.1f", fileSizeMB)) MB). Please upload files smaller than 100 MB.")
+            return
+        }
+
         // Get audio file duration
         let duration = getAudioDuration(url: url)
+        print("⏱️ Detected duration: \(duration) seconds")
+
+        // Warn if duration is very long (>90 minutes / 1.5 hours)
+        if duration > 5400 {
+            let durationMinutes = Int(duration / 60)
+            print("⚠️ Very long recording detected: \(durationMinutes) minutes - analysis may take several minutes")
+        } else if duration > 3600 {
+            let durationMinutes = Int(duration / 60)
+            print("⏱️ Long recording detected: \(durationMinutes) minutes")
+        }
+
+        // Start simulating progress
+        simulateProgress()
 
         _Concurrency.Task {
             do {
-                // Simulate progress updates
-                await simulateProgress()
-
                 // Upload to backend
                 print("📤 Uploading audio file: \(url.lastPathComponent)")
                 let recording = try await BraindumpsterAPI.shared.analyzeRecording(
@@ -242,6 +280,14 @@ struct ImportAudioView: View {
                 )
 
                 print("✅ Audio file analyzed successfully: \(recording.title)")
+
+                // Complete progress to 100%
+                await MainActor.run {
+                    uploadProgress = 1.0
+                }
+
+                // Small delay to show 100% before transitioning
+                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
 
                 await MainActor.run {
                     isUploading = false
@@ -271,21 +317,47 @@ struct ImportAudioView: View {
         }
     }
 
-    private func simulateProgress() async {
-        // Simulate upload progress
-        for i in 1...100 {
-            await MainActor.run {
-                uploadProgress = Double(i) / 100.0
+    private func simulateProgress() {
+        _Concurrency.Task {
+            // Simulate progress up to 95% while waiting for response
+            for i in 1...95 {
+                try? await _Concurrency.Task.sleep(nanoseconds: 40_000_000) // 40ms per step
+                await MainActor.run {
+                    uploadProgress = Double(i) / 100.0
+                }
             }
-            try? await _Concurrency.Task.sleep(nanoseconds: 30_000_000) // 30ms
         }
     }
 
+    private func showErrorMessage(_ message: String) {
+        isUploading = false
+        errorMessage = message
+        showError = true
+    }
+
     private func getAudioDuration(url: URL) -> TimeInterval {
-        // Use synchronous approach for AVAsset duration
-        let asset = AVURLAsset(url: url)
-        let duration = asset.duration
-        return CMTimeGetSeconds(duration)
+        do {
+            // Use synchronous approach for AVAsset duration
+            let asset = AVURLAsset(url: url)
+            let duration = asset.duration
+
+            guard duration.isValid && !duration.isIndefinite else {
+                print("⚠️ Invalid audio duration, using default")
+                return 0
+            }
+
+            let seconds = CMTimeGetSeconds(duration)
+            guard seconds.isFinite && seconds > 0 else {
+                print("⚠️ Audio duration is not finite or is zero")
+                return 0
+            }
+
+            print("✅ Audio duration: \(seconds) seconds")
+            return seconds
+        } catch {
+            print("❌ Error getting audio duration: \(error.localizedDescription)")
+            return 0
+        }
     }
 }
 
@@ -355,20 +427,31 @@ struct DocumentPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
 
+            print("📁 Selected file: \(url.lastPathComponent)")
+
             // Start accessing security-scoped resource
             guard url.startAccessingSecurityScopedResource() else {
                 print("❌ Could not access file")
                 return
             }
 
-            // Copy to temp location
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+            // Sanitize filename to avoid issues with special characters
+            let originalFileName = url.lastPathComponent
+            let sanitizedFileName = sanitizeFileName(originalFileName)
+            print("🔄 Sanitized filename: \(originalFileName) → \(sanitizedFileName)")
+
+            // Copy to temp location with sanitized name
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(sanitizedFileName)
 
             do {
+                // Remove existing file if present
                 if FileManager.default.fileExists(atPath: tempURL.path) {
                     try FileManager.default.removeItem(at: tempURL)
                 }
+
+                // Copy file to temp location
                 try FileManager.default.copyItem(at: url, to: tempURL)
+                print("✅ File copied to: \(tempURL.path)")
 
                 onDocumentPicked(tempURL)
             } catch {
@@ -376,6 +459,36 @@ struct DocumentPicker: UIViewControllerRepresentable {
             }
 
             url.stopAccessingSecurityScopedResource()
+        }
+
+        private func sanitizeFileName(_ fileName: String) -> String {
+            // Get file extension
+            let fileExtension = (fileName as NSString).pathExtension
+            let nameWithoutExtension = (fileName as NSString).deletingPathExtension
+
+            // Remove Turkish and special characters, keep only ASCII alphanumeric, dash, underscore
+            let sanitized = nameWithoutExtension
+                .replacingOccurrences(of: "ı", with: "i")
+                .replacingOccurrences(of: "İ", with: "I")
+                .replacingOccurrences(of: "ş", with: "s")
+                .replacingOccurrences(of: "Ş", with: "S")
+                .replacingOccurrences(of: "ğ", with: "g")
+                .replacingOccurrences(of: "Ğ", with: "G")
+                .replacingOccurrences(of: "ü", with: "u")
+                .replacingOccurrences(of: "Ü", with: "U")
+                .replacingOccurrences(of: "ö", with: "o")
+                .replacingOccurrences(of: "Ö", with: "O")
+                .replacingOccurrences(of: "ç", with: "c")
+                .replacingOccurrences(of: "Ç", with: "C")
+                .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ ")).inverted)
+                .joined()
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: " ", with: "_")
+
+            // If sanitization resulted in empty string, use timestamp
+            let finalName = sanitized.isEmpty ? "audio_\(Int(Date().timeIntervalSince1970))" : sanitized
+
+            return "\(finalName).\(fileExtension)"
         }
     }
 }

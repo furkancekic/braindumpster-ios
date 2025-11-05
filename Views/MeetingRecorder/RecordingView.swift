@@ -22,6 +22,7 @@ struct RecordingView: View {
     @State private var timer: Timer?
     @State private var showStopConfirmation = false
     @State private var isProcessing = false
+    @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
     @State private var showError = false
     @State private var analyzedRecording: Recording?
@@ -58,19 +59,54 @@ struct RecordingView: View {
                 Spacer()
 
                 if isProcessing {
-                    // Processing state (after stopping)
+                    // Processing state with progress bar
                     VStack(spacing: 30) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(2)
+                        // Circular progress indicator
+                        ZStack {
+                            // Background circle
+                            Circle()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 12)
+                                .frame(width: 160, height: 160)
 
-                        Text("Processing recording...")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
+                            // Progress circle
+                            Circle()
+                                .trim(from: 0, to: processingProgress)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(red: 0.45, green: 0.75, blue: 1.0),
+                                            Color(red: 0.35, green: 0.60, blue: 0.85)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                                )
+                                .frame(width: 160, height: 160)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.3), value: processingProgress)
 
-                        Text("AI is transcribing and analyzing")
-                            .font(.system(size: 15))
-                            .foregroundColor(.white.opacity(0.7))
+                            // Percentage text
+                            VStack(spacing: 4) {
+                                Text("\(Int(processingProgress * 100))%")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(.white)
+
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
+                            }
+                        }
+
+                        VStack(spacing: 12) {
+                            Text("Analyzing recording...")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(.white)
+
+                            Text("AI is transcribing and analyzing")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     }
                 } else if !isRecording {
                     // Ready state
@@ -256,8 +292,25 @@ struct RecordingView: View {
 
         audioRecorder.stopRecording()
 
-        // Show processing state
+        // Check file size (limit to 100MB for long recordings)
+        if let fileSize = try? FileManager.default.attributesOfItem(atPath: audioURL.path)[.size] as? UInt64 {
+            let fileSizeMB = Double(fileSize) / (1024 * 1024)
+            print("📊 Recording file size: \(String(format: "%.2f", fileSizeMB)) MB")
+
+            if fileSizeMB > 100 {
+                print("❌ Recording too large: \(fileSizeMB) MB")
+                errorMessage = "Recording is too large (\(String(format: "%.1f", fileSizeMB)) MB). Please try recording a shorter clip."
+                showError = true
+                return
+            }
+        }
+
+        // Show processing state and start progress animation
         isProcessing = true
+        processingProgress = 0.0
+
+        // Start simulating progress
+        simulateProgress()
 
         // Upload to backend and get analysis
         _Concurrency.Task {
@@ -269,6 +322,14 @@ struct RecordingView: View {
                 )
 
                 print("✅ Recording analyzed successfully: \(recording.title)")
+
+                // Complete progress to 100%
+                await MainActor.run {
+                    processingProgress = 1.0
+                }
+
+                // Small delay to show 100% before transitioning
+                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
 
                 // Show recording detail view
                 await MainActor.run {
@@ -293,6 +354,18 @@ struct RecordingView: View {
                     }
 
                     showError = true
+                }
+            }
+        }
+    }
+
+    private func simulateProgress() {
+        _Concurrency.Task {
+            // Simulate progress up to 95% while waiting for response
+            for i in 1...95 {
+                try? await _Concurrency.Task.sleep(nanoseconds: 40_000_000) // 40ms per step
+                await MainActor.run {
+                    processingProgress = Double(i) / 100.0
                 }
             }
         }

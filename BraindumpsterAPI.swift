@@ -1655,6 +1655,8 @@ extension BraindumpsterAPI {
             endpoint += "&type=\(type.rawValue)"
         }
 
+        print("📋 [getRecordings] Fetching recordings from: \(endpoint)")
+
         // Get Firebase auth token
         let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
             AuthService.shared.getIdToken { result in
@@ -1662,10 +1664,14 @@ extension BraindumpsterAPI {
             }
         }
 
+        print("🔑 [getRecordings] Got auth token (first 20 chars): \(String(token.prefix(20)))...")
+
         // Create request
         var request = URLRequest(url: URL(string: endpoint)!)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📤 [getRecordings] Sending GET request...")
 
         // Send request
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -1702,6 +1708,16 @@ extension BraindumpsterAPI {
         }
 
         let recordingsResponse = try decoder.decode(RecordingsResponse.self, from: data)
+
+        print("✅ [getRecordings] Received \(recordingsResponse.count) recordings")
+        if recordingsResponse.recordings.isEmpty {
+            print("   ⚠️ No recordings returned from backend")
+        } else {
+            for (index, recording) in recordingsResponse.recordings.enumerated() {
+                print("   \(index + 1). \(recording.title) - userId: (hidden)")
+            }
+        }
+
         return recordingsResponse.recordings
     }
 

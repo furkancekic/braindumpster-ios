@@ -228,7 +228,13 @@ struct MeetingRecorderHomeView: View {
             }
             .navigationBarHidden(true)
             .fullScreenCover(isPresented: $showRecordingView, onDismiss: {
-                loadRecentRecordings()
+                // Small delay to allow Firestore to index new recording
+                _Concurrency.Task {
+                    try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 500ms
+                    await MainActor.run {
+                        loadRecentRecordings()
+                    }
+                }
             }) {
                 RecordingView()
             }
@@ -241,7 +247,13 @@ struct MeetingRecorderHomeView: View {
                 RecordingDetailView(recording: recording)
             }
             .sheet(isPresented: $showImportAudio, onDismiss: {
-                loadRecentRecordings()
+                // Small delay to allow Firestore to index new recording
+                _Concurrency.Task {
+                    try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 500ms
+                    await MainActor.run {
+                        loadRecentRecordings()
+                    }
+                }
             }) {
                 ImportAudioView()
             }
