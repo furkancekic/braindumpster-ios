@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3BFEEEA12BB04DE4977B804F /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 062306AF60FA42F181E5C1D9 /* ConfirmationView.swift */; };
 		04FDEFF8064B479B8085377F /* StreakManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A4A3A2798E47478985F5F0 /* StreakManager.swift */; };
 		06F1946FA9824041883A61A1F05D558E /* TimezoneService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C071919AF24F85B0936AB350510949 /* TimezoneService.swift */; };
 		0F6B85339B4BDE3048D04A03 /* AskAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495BA37BF7EBFAD0A8BF9C21 /* AskAISheet.swift */; };
@@ -76,6 +77,7 @@
 		4BB36D2AB94A155B717B1BCE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5240FE56FD18457FA075C2BA /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
 		53F3AFCD3E6C725AF06B103A /* ErrorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ErrorView.swift; path = Views/Components/ErrorView.swift; sourceTree = "<group>"; };
+		062306AF60FA42F181E5C1D9 /* ConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ConfirmationView.swift; path = Views/Components/ConfirmationView.swift; sourceTree = "<group>"; };
 		543D9009C410F5603B76F081 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
 		589B7D7E7988C75063FE3DB6 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
 		59B4EF728159D868B1138501 /* AllRecordingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AllRecordingsView.swift; path = Views/MeetingRecorder/AllRecordingsView.swift; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 		169F3C60AB731B55B483EC30 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				062306AF60FA42F181E5C1D9 /* ConfirmationView.swift */,
 				53F3AFCD3E6C725AF06B103A /* ErrorView.swift */,
 			);
 			name = Components;
@@ -336,6 +339,7 @@
 				96602E95C71AF09F24051A05 /* RecordingDetailView.swift in Sources */,
 				0F6B85339B4BDE3048D04A03 /* AskAISheet.swift in Sources */,
 				FD31A01E544517A8672CCE32 /* ImportAudioView.swift in Sources */,
+				3BFEEEA12BB04DE4977B804F /* ConfirmationView.swift in Sources */,
 				1EB51B2E8344EAF9F1DEAF1D /* ErrorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

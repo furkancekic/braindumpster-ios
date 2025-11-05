@@ -170,9 +170,13 @@ Use these exact values to maintain consistency:
 - Use emojis in logs for easy scanning: ✅ 📤 ❌ ⚠️
 
 ### Date/Time Handling
-- Backend returns ISO8601 dates WITHOUT microseconds
-- iOS uses `.iso8601` decoder
-- Format: `"2025-11-05T20:18:21"` (no `.326883` suffix)
+- Backend returns ISO8601 dates in UTC with Z suffix
+- iOS uses `.iso8601` decoder which requires timezone
+- Format: `"2025-11-05T20:18:21Z"`
+- **No microseconds**: `"2025-11-05T20:18:21.326883"` ❌
+- **No timezone**: `"2025-11-05T20:18:21"` ❌
+- **Correct**: `"2025-11-05T20:18:21Z"` ✅
+- Backend uses: `datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')`
 
 ### Language Detection
 - Backend AI (Gemini) automatically detects audio/text language
