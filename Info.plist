@@ -23,20 +23,20 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.28669271299-5c6k1gs0nmerb9f747t3879dhp723e6r</string>
+				<string>com.googleusercontent.apps.28669271299-u56r6vaqfqc95fmm28ojivl64qpbvbfi</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>11</string>
 	<key>GIDClientID</key>
-	<string>28669271299-5c6k1gs0nmerb9f747t3879dhp723e6r.apps.googleusercontent.com</string>
+	<string>28669271299-u56r6vaqfqc95fmm28ojivl64qpbvbfi.apps.googleusercontent.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<false/>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Braindumpster needs access to your microphone to record voice notes and convert them to tasks</string>

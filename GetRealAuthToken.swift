@@ -131,7 +131,9 @@ func testVerifyReceiptEndpoint() async {
         print("📦 Receipt size: \(receiptData.count) bytes")
 
         // Prepare request
-        let url = URL(string: "https://api.braindumpster.io/api/verify-receipt")!
+        guard let url = URL(string: "https://api.braindumpster.io/api/verify-receipt") else {
+            throw NSError(domain: "GetRealAuthToken", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL configuration"])
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

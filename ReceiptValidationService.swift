@@ -160,7 +160,9 @@ class ReceiptValidationService {
     // MARK: - Network Request
 
     private func sendVerificationRequest(request: ReceiptVerificationRequest) async throws -> ReceiptVerificationResponse {
-        let url = URL(string: "\(BackendConfig.baseURL)/subscriptions/verify-receipt")!
+        guard let url = URL(string: "\(BackendConfig.baseURL)/subscriptions/verify-receipt") else {
+            throw NSError(domain: "ReceiptValidationService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL configuration"])
+        }
 
         // Get Firebase auth token
         let authToken: String

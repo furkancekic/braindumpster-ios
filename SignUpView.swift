@@ -59,7 +59,12 @@ struct SignUpView: View {
                     // Apple Sign Up Button
                     SignInWithAppleButton(
                         onRequest: { request in
-                            let nonce = randomNonceString()
+                            guard let nonce = randomNonceString() else {
+                                // If we can't generate a secure nonce, we shouldn't proceed with sign-in
+                                errorMessage = "Unable to generate secure authentication token"
+                                showError = true
+                                return
+                            }
                             currentNonce = nonce
                             request.requestedScopes = [.fullName, .email]
                             request.nonce = sha256(nonce)
@@ -415,20 +420,22 @@ struct SignUpView: View {
     }
 
     // MARK: - Nonce Generation
-    private func randomNonceString(length: Int = 32) -> String {
+    private func randomNonceString(length: Int = 32) -> String? {
         precondition(length > 0)
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
         var result = ""
         var remainingLength = length
 
         while remainingLength > 0 {
-            let randoms: [UInt8] = (0 ..< 16).map { _ in
+            var randoms: [UInt8] = []
+            for _ in 0 ..< 16 {
                 var random: UInt8 = 0
                 let errorCode = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
                 if errorCode != errSecSuccess {
-                    fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+                    // Failed to generate secure random - return nil instead of crashing
+                    return nil
                 }
-                return random
+                randoms.append(random)
             }
 
             randoms.forEach { random in

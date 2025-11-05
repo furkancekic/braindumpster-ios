@@ -29,6 +29,7 @@ targets:
     sources:
       - BraindumpsterApp.swift
       - AppDelegate.swift
+      - Logger.swift
       - Models.swift
       - ContentView.swift
       - VoiceInputView.swift
@@ -81,7 +82,7 @@ targets:
         NSMicrophoneUsageDescription: "Braindumpster needs access to your microphone to record voice notes and convert them to tasks"
         NSPhotoLibraryUsageDescription: "Braindumpster needs access to your photo library to save task images"
         NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
+          NSAllowsArbitraryLoads: false
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:

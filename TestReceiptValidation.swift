@@ -78,7 +78,10 @@ struct TestReceiptValidationView: View {
                 print("📦 Receipt hash: \(sha256(receiptData).prefix(8))")
 
                 // Prepare request
-                let url = URL(string: "\(BackendConfig.baseURL)/verify-receipt")!
+                guard let url = URL(string: "\(BackendConfig.baseURL)/verify-receipt") else {
+                    print("❌ Invalid URL configuration")
+                    return
+                }
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")

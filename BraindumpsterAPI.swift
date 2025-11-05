@@ -12,6 +12,23 @@ class BraindumpsterAPI {
 
     private init() {}
 
+    // MARK: - URL Helper
+    /// Safely creates a URL from a string, throwing an error if invalid
+    private func makeURL(from endpoint: String) throws -> URL {
+        guard let url = URL(string: endpoint) else {
+            throw APIError.invalidURL(endpoint)
+        }
+        return url
+    }
+
+    // MARK: - Data Helper
+    /// Safely converts a string to UTF-8 data
+    private func utf8Data(_ string: String) -> Data {
+        // UTF-8 encoding should never fail for valid Swift strings
+        // But we handle it gracefully just in case
+        return string.data(using: .utf8) ?? Data()
+    }
+
     // MARK: - Send Audio Message
     func sendAudioMessage(audioFileURL: URL, conversationId: String? = nil) async throws -> AudioMessageResponse {
         let endpoint = "\(baseURL)/chat/send-audio"
@@ -29,7 +46,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -44,20 +62,20 @@ class BraindumpsterAPI {
         let filename = audioFileURL.lastPathComponent
         let mimeType = getMimeType(for: audioFileURL)
 
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(utf8Data("--\(boundary)\r\n"))
+        body.append(utf8Data("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n"))
+        body.append(utf8Data("Content-Type: \(mimeType)\r\n\r\n"))
         body.append(audioData)
-        body.append("\r\n".data(using: .utf8)!)
+        body.append(utf8Data("\r\n"))
 
         // Add conversation_id if provided
         if let conversationId = conversationId {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"conversation_id\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(conversationId)\r\n".data(using: .utf8)!)
+            body.append(utf8Data("--\(boundary)\r\n"))
+            body.append(utf8Data("Content-Disposition: form-data; name=\"conversation_id\"\r\n\r\n"))
+            body.append(utf8Data("\(conversationId)\r\n"))
         }
 
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append(utf8Data("--\(boundary)--\r\n"))
 
         request.httpBody = body
 
@@ -123,7 +141,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -178,7 +197,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -219,7 +239,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -269,7 +290,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -397,7 +419,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -434,7 +457,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -476,7 +500,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -513,7 +538,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -569,7 +595,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -627,7 +654,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -670,7 +698,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -701,7 +730,8 @@ class BraindumpsterAPI {
         let endpoint = "\(baseURL)/auth/register"
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -752,7 +782,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -856,7 +887,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -892,7 +924,8 @@ class BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1297,7 +1330,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1326,7 +1360,8 @@ extension BraindumpsterAPI {
         let endpoint = "\(baseURL)/subscriptions/status?user_id=\(userId)"
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
         // Send request
@@ -1358,7 +1393,8 @@ extension BraindumpsterAPI {
         let token = try await AuthService.shared.getIdToken()
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -1397,7 +1433,8 @@ extension BraindumpsterAPI {
         let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1423,6 +1460,7 @@ extension BraindumpsterAPI {
 enum APIError: LocalizedError {
     case unauthorized
     case invalidResponse
+    case invalidURL(String)
     case serverError(String)
     case httpError(Int)
     case networkError(Error)
@@ -1433,6 +1471,8 @@ enum APIError: LocalizedError {
             return "Session expired 🔐 Sign in again to continue"
         case .invalidResponse:
             return "Got a weird response from the server 🤔 Try again?"
+        case .invalidURL(let urlString):
+            return "Invalid URL configuration: \(urlString)"
         case .serverError(let message):
             // Return friendly version if it's a technical message
             if message.lowercased().contains("internal") || message.lowercased().contains("500") {
@@ -1510,7 +1550,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1550,7 +1591,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -1565,19 +1607,19 @@ extension BraindumpsterAPI {
         let filename = audioFileURL.lastPathComponent
         let mimeType = getMimeType(for: audioFileURL)
 
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(utf8Data("--\(boundary)\r\n"))
+        body.append(utf8Data("Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n"))
+        body.append(utf8Data("Content-Type: \(mimeType)\r\n\r\n"))
         body.append(audioData)
-        body.append("\r\n".data(using: .utf8)!)
+        body.append(utf8Data("\r\n"))
 
         // Add duration
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"duration\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(Int(duration))".data(using: .utf8)!)
-        body.append("\r\n".data(using: .utf8)!)
+        body.append(utf8Data("--\(boundary)\r\n"))
+        body.append(utf8Data("Content-Disposition: form-data; name=\"duration\"\r\n\r\n"))
+        body.append(utf8Data("\(Int(duration))"))
+        body.append(utf8Data("\r\n"))
 
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append(utf8Data("--\(boundary)--\r\n"))
 
         request.httpBody = body
 
@@ -1634,7 +1676,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -1688,7 +1731,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -1719,7 +1763,8 @@ extension BraindumpsterAPI {
         }
 
         // Create request
-        var request = URLRequest(url: URL(string: endpoint)!)
+        let url = try makeURL(from: endpoint)
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
