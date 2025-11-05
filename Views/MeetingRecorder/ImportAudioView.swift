@@ -226,7 +226,18 @@ struct ImportAudioView: View {
 
                 await MainActor.run {
                     isUploading = false
-                    errorMessage = "Failed to analyze audio file. Please try again."
+
+                    // Create user-friendly error message based on error type
+                    if error.localizedDescription.contains("timed out") {
+                        errorMessage = "Analysis is taking longer than expected. Please try uploading a shorter audio file or check your internet connection."
+                    } else if error.localizedDescription.contains("offline") || error.localizedDescription.contains("internet") || error.localizedDescription.contains("network") {
+                        errorMessage = "No internet connection. Please check your network and try again."
+                    } else if error.localizedDescription.contains("unsupported") || error.localizedDescription.contains("format") {
+                        errorMessage = "This audio format is not supported. Please use M4A, MP3, WAV, or AAC files."
+                    } else {
+                        errorMessage = "Unable to analyze audio file. Please try again later."
+                    }
+
                     showError = true
                 }
             }

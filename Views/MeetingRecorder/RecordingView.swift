@@ -9,6 +9,8 @@ struct RecordingView: View {
     @State private var timer: Timer?
     @State private var showStopConfirmation = false
     @State private var isProcessing = false
+    @State private var errorMessage: String?
+    @State private var showError = false
 
     var body: some View {
         ZStack {
@@ -175,6 +177,20 @@ struct RecordingView: View {
         } message: {
             Text("Your recording will be processed by AI to generate transcripts, summaries, and action items.")
         }
+        .alert("Analysis Failed", isPresented: $showError) {
+            Button("Try Again", role: .cancel) {
+                errorMessage = nil
+                dismiss()
+            }
+            Button("Dismiss") {
+                errorMessage = nil
+                dismiss()
+            }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
+            }
+        }
     }
 
     private var formattedDuration: String {
@@ -235,10 +251,20 @@ struct RecordingView: View {
             } catch {
                 print("❌ Error analyzing recording: \(error.localizedDescription)")
 
-                // Show error and close
+                // Show error message to user
                 await MainActor.run {
-                    // TODO: Show error toast
-                    dismiss()
+                    isProcessing = false
+
+                    // Create user-friendly error message
+                    if error.localizedDescription.contains("timed out") {
+                        errorMessage = "Analysis is taking longer than expected. Your recording was saved locally. Please try uploading a shorter audio file or check your internet connection."
+                    } else if error.localizedDescription.contains("offline") || error.localizedDescription.contains("internet") {
+                        errorMessage = "No internet connection. Please check your network and try again."
+                    } else {
+                        errorMessage = "Unable to analyze recording. Please try again later."
+                    }
+
+                    showError = true
                 }
             }
         }
