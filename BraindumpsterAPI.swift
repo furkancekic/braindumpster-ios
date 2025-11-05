@@ -1007,6 +1007,46 @@ class BraindumpsterAPI {
             return "audio/m4a"
         }
     }
+
+    /// Upload request with progress tracking
+    private func withProgress(
+        request: URLRequest,
+        progressHandler: (@Sendable (Double) -> Void)?
+    ) async throws -> (Data, URLResponse) {
+        // Create URLSession with delegate for progress tracking
+        let delegate = UploadProgressDelegate(progressHandler: progressHandler)
+        let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+
+        // Perform upload
+        let (data, response) = try await session.data(for: request)
+
+        return (data, response)
+    }
+}
+
+// MARK: - Upload Progress Delegate
+private class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
+    private let progressHandler: (@Sendable (Double) -> Void)?
+
+    init(progressHandler: (@Sendable (Double) -> Void)?) {
+        self.progressHandler = progressHandler
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didSendBodyData bytesSent: Int64,
+        totalBytesSent: Int64,
+        totalBytesExpectedToSend: Int64
+    ) {
+        let progress = Double(totalBytesSent) / Double(totalBytesExpectedToSend)
+        // Upload progress is 0-70%, leave 70-100% for server processing
+        let adjustedProgress = progress * 0.7
+
+        Task { @MainActor in
+            progressHandler?(adjustedProgress)
+        }
+    }
 }
 
 // MARK: - API Models
@@ -1539,7 +1579,11 @@ extension BraindumpsterAPI {
     // MARK: - Meeting Recorder Endpoints
 
     /// Upload and analyze audio recording
-    func analyzeRecording(audioFileURL: URL, duration: TimeInterval) async throws -> Recording {
+    func analyzeRecording(
+        audioFileURL: URL,
+        duration: TimeInterval,
+        progressHandler: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> Recording {
         let endpoint = "\(baseURL)/meetings/analyze"
 
         // Get Firebase auth token
@@ -1582,8 +1626,8 @@ extension BraindumpsterAPI {
 
         request.httpBody = body
 
-        // Send request
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Send request with progress tracking
+        let (data, response) = try await withProgress(request: request, progressHandler: progressHandler)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse

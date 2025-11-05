@@ -267,17 +267,19 @@ struct ImportAudioView: View {
             print("⏱️ Long recording detected: \(durationMinutes) minutes")
         }
 
-        // Start simulating progress
-        simulateProgress()
-
         _Concurrency.Task {
             do {
-                // Upload to backend
+                // Upload to backend with real-time progress tracking
                 print("📤 Uploading audio file: \(url.lastPathComponent)")
                 let recording = try await BraindumpsterAPI.shared.analyzeRecording(
                     audioFileURL: url,
                     duration: duration
-                )
+                ) { progress in
+                    Task { @MainActor in
+                        self.uploadProgress = progress
+                        print("📊 Upload progress: \(Int(progress * 100))%")
+                    }
+                }
 
                 print("✅ Audio file analyzed successfully: \(recording.title)")
 
@@ -295,35 +297,43 @@ struct ImportAudioView: View {
                     showRecordingDetail = true
                 }
             } catch {
-                print("❌ Error uploading audio: \(error.localizedDescription)")
+                print("❌ Error uploading audio: \(error)")
+                print("   Error type: \(type(of: error))")
+                print("   Localized description: \(error.localizedDescription)")
+
+                // Log more details about URLError if available
+                if let urlError = error as? URLError {
+                    print("   URLError code: \(urlError.code.rawValue)")
+                    print("   URLError description: \(urlError.localizedDescription)")
+                }
 
                 await MainActor.run {
                     isUploading = false
+                    uploadProgress = 0.0
 
                     // Create user-friendly error message based on error type
-                    if error.localizedDescription.contains("timed out") {
+                    if let urlError = error as? URLError {
+                        switch urlError.code {
+                        case .timedOut:
+                            errorMessage = "Upload timed out. The file may be too large or your connection is slow. Try a shorter recording."
+                        case .notConnectedToInternet, .networkConnectionLost:
+                            errorMessage = "No internet connection. Please check your network and try again."
+                        case .cannotConnectToHost, .cannotFindHost:
+                            errorMessage = "Cannot reach server. Please check your internet connection."
+                        default:
+                            errorMessage = "Upload failed: \(urlError.localizedDescription)"
+                        }
+                    } else if error.localizedDescription.contains("timed out") {
                         errorMessage = "Analysis is taking longer than expected. Please try uploading a shorter audio file or check your internet connection."
                     } else if error.localizedDescription.contains("offline") || error.localizedDescription.contains("internet") || error.localizedDescription.contains("network") {
                         errorMessage = "No internet connection. Please check your network and try again."
                     } else if error.localizedDescription.contains("unsupported") || error.localizedDescription.contains("format") {
                         errorMessage = "This audio format is not supported. Please use M4A, MP3, WAV, or AAC files."
                     } else {
-                        errorMessage = "Unable to analyze audio file. Please try again later."
+                        errorMessage = "Unable to analyze audio file: \(error.localizedDescription)"
                     }
 
                     showError = true
-                }
-            }
-        }
-    }
-
-    private func simulateProgress() {
-        _Concurrency.Task {
-            // Simulate progress up to 95% while waiting for response
-            for i in 1...95 {
-                try? await _Concurrency.Task.sleep(nanoseconds: 40_000_000) // 40ms per step
-                await MainActor.run {
-                    uploadProgress = Double(i) / 100.0
                 }
             }
         }

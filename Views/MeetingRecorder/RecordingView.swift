@@ -293,8 +293,9 @@ struct RecordingView: View {
         audioRecorder.stopRecording()
 
         // Check file size (limit to 100MB for long recordings)
+        var fileSizeMB: Double = 1.0  // Default to 1MB if we can't determine size
         if let fileSize = try? FileManager.default.attributesOfItem(atPath: audioURL.path)[.size] as? UInt64 {
-            let fileSizeMB = Double(fileSize) / (1024 * 1024)
+            fileSizeMB = Double(fileSize) / (1024 * 1024)
             print("📊 Recording file size: \(String(format: "%.2f", fileSizeMB)) MB")
 
             if fileSizeMB > 100 {
@@ -309,17 +310,19 @@ struct RecordingView: View {
         isProcessing = true
         processingProgress = 0.0
 
-        // Start simulating progress
-        simulateProgress()
-
-        // Upload to backend and get analysis
+        // Upload to backend and get analysis with real-time progress
         _Concurrency.Task {
             do {
                 print("📤 Uploading recording to backend...")
                 let recording = try await BraindumpsterAPI.shared.analyzeRecording(
                     audioFileURL: audioURL,
                     duration: recordingDuration
-                )
+                ) { progress in
+                    Task { @MainActor in
+                        self.processingProgress = progress
+                        print("📊 Upload progress: \(Int(progress * 100))%")
+                    }
+                }
 
                 print("✅ Recording analyzed successfully: \(recording.title)")
 
@@ -338,19 +341,38 @@ struct RecordingView: View {
                     showRecordingDetail = true
                 }
             } catch {
-                print("❌ Error analyzing recording: \(error.localizedDescription)")
+                print("❌ Error analyzing recording: \(error)")
+                print("   Error type: \(type(of: error))")
+                print("   Localized description: \(error.localizedDescription)")
+
+                if let urlError = error as? URLError {
+                    print("   URLError code: \(urlError.code.rawValue)")
+                    print("   URLError description: \(urlError.localizedDescription)")
+                }
 
                 // Show error message to user
                 await MainActor.run {
                     isProcessing = false
+                    processingProgress = 0.0
 
                     // Create user-friendly error message
-                    if error.localizedDescription.contains("timed out") {
+                    if let urlError = error as? URLError {
+                        switch urlError.code {
+                        case .timedOut:
+                            errorMessage = "Upload timed out. The recording may be too large or your connection is slow."
+                        case .notConnectedToInternet, .networkConnectionLost:
+                            errorMessage = "No internet connection. Please check your network and try again."
+                        case .cannotConnectToHost, .cannotFindHost:
+                            errorMessage = "Cannot reach server. Please check your internet connection."
+                        default:
+                            errorMessage = "Upload failed: \(urlError.localizedDescription)"
+                        }
+                    } else if error.localizedDescription.contains("timed out") {
                         errorMessage = "Analysis is taking longer than expected. Your recording was saved locally. Please try uploading a shorter audio file or check your internet connection."
                     } else if error.localizedDescription.contains("offline") || error.localizedDescription.contains("internet") {
                         errorMessage = "No internet connection. Please check your network and try again."
                     } else {
-                        errorMessage = "Unable to analyze recording. Please try again later."
+                        errorMessage = "Unable to analyze recording: \(error.localizedDescription)"
                     }
 
                     showError = true
@@ -359,17 +381,6 @@ struct RecordingView: View {
         }
     }
 
-    private func simulateProgress() {
-        _Concurrency.Task {
-            // Simulate progress up to 95% while waiting for response
-            for i in 1...95 {
-                try? await _Concurrency.Task.sleep(nanoseconds: 40_000_000) // 40ms per step
-                await MainActor.run {
-                    processingProgress = Double(i) / 100.0
-                }
-            }
-        }
-    }
 }
 
 #Preview {
