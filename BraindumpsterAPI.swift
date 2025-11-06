@@ -1633,7 +1633,8 @@ extension BraindumpsterAPI {
             throw APIError.invalidResponse
         }
 
-        guard httpResponse.statusCode == 200 else {
+        // Accept both 200 (immediate completion) and 202 (accepted for processing)
+        guard httpResponse.statusCode == 200 || httpResponse.statusCode == 202 else {
             // Try to decode error response with full details
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 print("🔴 [analyzeRecording] Server Error:")
@@ -1648,6 +1649,13 @@ extension BraindumpsterAPI {
                 throw APIError.serverError(errorResponse.error)
             }
             throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        // Log status code
+        if httpResponse.statusCode == 202 {
+            print("⏳ [analyzeRecording] Recording accepted for async processing (202)")
+        } else {
+            print("✅ [analyzeRecording] Recording completed immediately (200)")
         }
 
         // Decode response
