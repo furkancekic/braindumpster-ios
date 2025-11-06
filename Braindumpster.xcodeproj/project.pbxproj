@@ -291,8 +291,7 @@
 			files = (
 				B1B46DDACA00299DA5E16056 /* Assets.xcassets in Resources */,
 				A3D11D5E2199A9EFE7487452 /* GoogleService-Info.plist in Resources */,
-			
-				250469495958818136587175 /* RecordingStatusListener.swift in Sources */,);
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -346,6 +345,7 @@
 				FD31A01E544517A8672CCE32 /* ImportAudioView.swift in Sources */,
 				3BFEEEA12BB04DE4977B804F /* ConfirmationView.swift in Sources */,
 				1EB51B2E8344EAF9F1DEAF1D /* ErrorView.swift in Sources */,
+				250469495958818136587175 /* RecordingStatusListener.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
