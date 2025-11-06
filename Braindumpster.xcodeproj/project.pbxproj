@@ -59,7 +59,8 @@
 		FD15C6A069664FB6BF1C779E /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA70377BCEA34788B6633EB3 /* ConfettiView.swift */; };
 		FD31A01E544517A8672CCE32 /* ImportAudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F76DB8FBB0C7A89E294FC3 /* ImportAudioView.swift */; };
 		FD8C845152B6BD61E25A61DE /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 841AC2EDF178D9E2AA946B8E /* RevenueCat */; };
-/* End PBXBuildFile section */
+		250469495958818136587175 /* RecordingStatusListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 295807852507274889989925 /* RecordingStatusListener.swift */; };
+		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		071A899F1A86860B1B145C45 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
@@ -110,7 +111,8 @@
 		F9FEE26D895C77FE09C751C7 /* TermsOfServiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermsOfServiceView.swift; sourceTree = "<group>"; };
 		FBCEF601A9B84F27ACFDA65C /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
 		FFE7DF2CE3D848699325DC8D /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
-/* End PBXFileReference section */
+		295807852507274889989925 /* RecordingStatusListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingStatusListener.swift; sourceTree = "<group>"; };
+		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		56BBB814B80133943A4B759E /* Frameworks */ = {
@@ -197,6 +199,8 @@
 				CB4E2FEFE0F94F7FB91E0BE9 /* NotificationCopyGuide.swift */,
 				FFE7DF2CE3D848699325DC8D /* Products.storekit */,
 				BE9D76F57AB8C230734AA13A /* Views */,
+			
+				295807852507274889989925 /* RecordingStatusListener.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -287,7 +291,8 @@
 			files = (
 				B1B46DDACA00299DA5E16056 /* Assets.xcassets in Resources */,
 				A3D11D5E2199A9EFE7487452 /* GoogleService-Info.plist in Resources */,
-			);
+			
+				250469495958818136587175 /* RecordingStatusListener.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
