@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import AVFoundation
 import CoreMedia
+import FirebaseAuth
 
 // Helper to make fullScreenCover background transparent
 struct ClearBackgroundViewForImport: UIViewRepresentable {
