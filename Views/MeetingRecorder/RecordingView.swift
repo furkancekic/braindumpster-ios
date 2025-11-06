@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import FirebaseAuth
 
 // Helper to make fullScreenCover background transparent
 struct ClearBackgroundView: UIViewRepresentable {
@@ -247,8 +248,8 @@ struct RecordingView: View {
             )
             .background(ClearBackgroundView())
         }
-        .onChange(of: statusListener.recording) {
-            guard let recording = statusListener.recording else { return }
+        .onReceive(statusListener.$recording) { newRecording in
+            guard let recording = newRecording else { return }
 
             print("📥 Recording status updated: \(recording.status.rawValue)")
 

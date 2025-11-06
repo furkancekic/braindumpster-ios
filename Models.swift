@@ -488,20 +488,20 @@ struct Recording: Identifiable, Codable, Equatable {
     }
 }
 
-struct RecordingSummary: Codable {
+struct RecordingSummary: Codable, Equatable {
     let brief: String // 1-2 sentences
     let detailed: String // 3-4 paragraphs
     let keyTakeaways: [String]
 }
 
-struct SentimentData: Codable {
+struct SentimentData: Codable, Equatable {
     let overall: String // positive, neutral, negative, mixed
     let score: Int // 0-100
     let moments: [SentimentMoment]
     let speakerMoods: [SpeakerMood]
 }
 
-struct SentimentMoment: Codable, Identifiable {
+struct SentimentMoment: Codable, Identifiable, Equatable {
     let id = UUID()
     let timestamp: String // "MM:SS"
     let type: String // positive, tension, negative, neutral
@@ -510,9 +510,13 @@ struct SentimentMoment: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case timestamp, type, description
     }
+
+    static func == (lhs: SentimentMoment, rhs: SentimentMoment) -> Bool {
+        lhs.timestamp == rhs.timestamp && lhs.type == rhs.type && lhs.description == rhs.description
+    }
 }
 
-struct SpeakerMood: Codable, Identifiable {
+struct SpeakerMood: Codable, Identifiable, Equatable {
     let id = UUID()
     let speaker: String
     let mood: String // positive, neutral, negative
@@ -522,9 +526,13 @@ struct SpeakerMood: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case speaker, mood, energy, talkTimePercentage
     }
+
+    static func == (lhs: SpeakerMood, rhs: SpeakerMood) -> Bool {
+        lhs.speaker == rhs.speaker && lhs.mood == rhs.mood && lhs.energy == rhs.energy && lhs.talkTimePercentage == rhs.talkTimePercentage
+    }
 }
 
-struct TranscriptSegment: Codable, Identifiable {
+struct TranscriptSegment: Codable, Identifiable, Equatable {
     let id = UUID()
     let speaker: String
     let timestamp: String // "MM:SS"
@@ -534,9 +542,13 @@ struct TranscriptSegment: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case speaker, timestamp, text, sentiment
     }
+
+    static func == (lhs: TranscriptSegment, rhs: TranscriptSegment) -> Bool {
+        lhs.speaker == rhs.speaker && lhs.timestamp == rhs.timestamp && lhs.text == rhs.text && lhs.sentiment == rhs.sentiment
+    }
 }
 
-struct ActionItem: Codable, Identifiable {
+struct ActionItem: Codable, Identifiable, Equatable {
     let id = UUID()
     let task: String
     let assignee: String // Name or "You"
@@ -549,9 +561,13 @@ struct ActionItem: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case task, assignee, dueDate, priority, timestamp, context, isCompleted
     }
+
+    static func == (lhs: ActionItem, rhs: ActionItem) -> Bool {
+        lhs.task == rhs.task && lhs.assignee == rhs.assignee && lhs.dueDate == rhs.dueDate && lhs.priority == rhs.priority && lhs.timestamp == rhs.timestamp && lhs.context == rhs.context && lhs.isCompleted == rhs.isCompleted
+    }
 }
 
-struct KeyPoint: Codable, Identifiable {
+struct KeyPoint: Codable, Identifiable, Equatable {
     let id = UUID()
     let timestamp: String // "MM:SS"
     let point: String
@@ -572,9 +588,13 @@ struct KeyPoint: Codable, Identifiable {
             return "😐"
         }
     }
+
+    static func == (lhs: KeyPoint, rhs: KeyPoint) -> Bool {
+        lhs.timestamp == rhs.timestamp && lhs.point == rhs.point && lhs.category == rhs.category && lhs.sentiment == rhs.sentiment
+    }
 }
 
-struct Decision: Codable, Identifiable {
+struct Decision: Codable, Identifiable, Equatable {
     let id = UUID()
     let decision: String
     let timestamp: String // "MM:SS"
@@ -583,6 +603,10 @@ struct Decision: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case decision, timestamp, participants, impact
+    }
+
+    static func == (lhs: Decision, rhs: Decision) -> Bool {
+        lhs.decision == rhs.decision && lhs.timestamp == rhs.timestamp && lhs.participants == rhs.participants && lhs.impact == rhs.impact
     }
 }
 

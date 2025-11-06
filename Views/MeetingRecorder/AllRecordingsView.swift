@@ -20,7 +20,7 @@ struct AllRecordingsView: View {
         if !searchText.isEmpty {
             result = result.filter {
                 $0.title.localizedCaseInsensitiveContains(searchText) ||
-                $0.summary.brief.localizedCaseInsensitiveContains(searchText)
+                ($0.summary?.brief.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
 
@@ -257,7 +257,7 @@ struct RecordingListCard: View {
                     .foregroundColor(Color(white: 0.5))
             }
 
-            Text(recording.summary.brief)
+            Text(recording.summary?.brief ?? "Processing...")
                 .font(.system(size: 15))
                 .foregroundColor(Color(white: 0.4))
                 .lineLimit(2)
