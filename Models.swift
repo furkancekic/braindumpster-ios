@@ -486,6 +486,50 @@ struct Recording: Identifiable, Codable, Equatable {
     var taskCount: Int {
         actionItems.count
     }
+
+    // Custom decoder to handle missing fields during processing
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        date = try container.decode(Date.self, forKey: .date)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        type = try container.decode(RecordingType.self, forKey: .type)
+        status = try container.decode(RecordingStatus.self, forKey: .status)
+        summary = try container.decodeIfPresent(RecordingSummary.self, forKey: .summary)
+        audioFileURL = try container.decodeIfPresent(String.self, forKey: .audioFileURL)
+
+        // Provide defaults for optional fields during processing
+        aiDetected = try container.decodeIfPresent(Bool.self, forKey: .aiDetected) ?? false
+        sentiment = try container.decodeIfPresent(SentimentData.self, forKey: .sentiment)
+        transcript = try container.decodeIfPresent([TranscriptSegment].self, forKey: .transcript) ?? []
+        actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
+        keyPoints = try container.decodeIfPresent([KeyPoint].self, forKey: .keyPoints) ?? []
+        decisions = try container.decodeIfPresent([Decision].self, forKey: .decisions) ?? []
+    }
+
+    // Keep standard init for creating Recording objects in code
+    init(id: String, title: String, date: Date, duration: TimeInterval, type: RecordingType,
+         aiDetected: Bool, status: RecordingStatus, summary: RecordingSummary?,
+         sentiment: SentimentData?, transcript: [TranscriptSegment],
+         actionItems: [ActionItem], keyPoints: [KeyPoint],
+         decisions: [Decision], audioFileURL: String?) {
+        self.id = id
+        self.title = title
+        self.date = date
+        self.duration = duration
+        self.type = type
+        self.aiDetected = aiDetected
+        self.status = status
+        self.summary = summary
+        self.sentiment = sentiment
+        self.transcript = transcript
+        self.actionItems = actionItems
+        self.keyPoints = keyPoints
+        self.decisions = decisions
+        self.audioFileURL = audioFileURL
+    }
 }
 
 struct RecordingSummary: Codable, Equatable {
