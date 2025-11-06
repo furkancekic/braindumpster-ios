@@ -224,8 +224,8 @@ struct ImportAudioView: View {
             )
             .background(ClearBackgroundViewForImport())
         }
-        .onChange(of: statusListener.recording) { newRecording in
-            guard let recording = newRecording else { return }
+        .onChange(of: statusListener.recording) {
+            guard let recording = statusListener.recording else { return }
 
             print("📥 Recording status updated: \(recording.status.rawValue)")
 
