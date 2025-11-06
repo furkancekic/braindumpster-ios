@@ -17,6 +17,7 @@ struct ClearBackgroundView: UIViewRepresentable {
 struct RecordingView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var audioRecorder = AudioRecorder()
+    @StateObject private var statusListener = RecordingStatusListener()
     @State private var isRecording = false
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
@@ -27,6 +28,7 @@ struct RecordingView: View {
     @State private var showError = false
     @State private var analyzedRecording: Recording?
     @State private var showRecordingDetail = false
+    @State private var processingMessage: String = "Uploading..."
 
     var body: some View {
         ZStack {
@@ -99,11 +101,11 @@ struct RecordingView: View {
                         }
 
                         VStack(spacing: 12) {
-                            Text("Analyzing recording...")
+                            Text(processingMessage)
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.white)
 
-                            Text("AI is transcribing and analyzing")
+                            Text(processingProgress < 0.7 ? "Uploading audio..." : "AI is analyzing in background...")
                                 .font(.system(size: 15))
                                 .foregroundColor(.white.opacity(0.7))
                         }
@@ -245,6 +247,30 @@ struct RecordingView: View {
             )
             .background(ClearBackgroundView())
         }
+        .onChange(of: statusListener.recording) { newRecording in
+            guard let recording = newRecording else { return }
+
+            print("📥 Recording status updated: \(recording.status.rawValue)")
+
+            if recording.status == .completed {
+                // Analysis completed
+                processingProgress = 1.0
+                processingMessage = "Analysis complete!"
+
+                // Small delay to show 100%
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isProcessing = false
+                    analyzedRecording = recording
+                    showRecordingDetail = true
+                }
+            } else if recording.status == .failed {
+                // Analysis failed
+                isProcessing = false
+                processingProgress = 0.0
+                errorMessage = "Analysis failed. Please try again."
+                showError = true
+            }
+        }
         .fullScreenCover(isPresented: $showRecordingDetail, onDismiss: {
             // When detail view is dismissed, go back to home
             dismiss()
@@ -324,21 +350,50 @@ struct RecordingView: View {
                     }
                 }
 
-                print("✅ Recording analyzed successfully: \(recording.title)")
+                print("✅ Recording received: \(recording.title), status: \(recording.status.rawValue)")
 
-                // Complete progress to 100%
+                // Complete upload progress to 70%
                 await MainActor.run {
-                    processingProgress = 1.0
+                    processingProgress = 0.7
                 }
 
-                // Small delay to show 100% before transitioning
-                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
+                // Check recording status
+                if recording.status == .processing {
+                    // Start listening for Firestore updates
+                    await MainActor.run {
+                        processingMessage = "Processing on server..."
+                        guard let userId = AuthService.shared.currentUser?.uid else { return }
+                        statusListener.startListening(recordingId: recording.id, userId: userId)
+                    }
 
-                // Show recording detail view
-                await MainActor.run {
-                    isProcessing = false
-                    analyzedRecording = recording
-                    showRecordingDetail = true
+                    print("⏳ Recording is processing in background, waiting for updates...")
+
+                    // Progress simulation while waiting (70% -> 95%)
+                    for i in 70...95 {
+                        try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                        await MainActor.run {
+                            processingProgress = Double(i) / 100.0
+                        }
+                    }
+
+                } else if recording.status == .completed {
+                    // Already completed (fast response)
+                    await MainActor.run {
+                        processingProgress = 1.0
+                    }
+
+                    try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
+
+                    await MainActor.run {
+                        isProcessing = false
+                        analyzedRecording = recording
+                        showRecordingDetail = true
+                    }
+                } else {
+                    // Failed status
+                    throw NSError(domain: "RecordingError", code: -1, userInfo: [
+                        NSLocalizedDescriptionKey: "Recording analysis failed on server"
+                    ])
                 }
             } catch {
                 print("❌ Error analyzing recording: \(error)")

@@ -18,6 +18,7 @@ struct ClearBackgroundViewForImport: UIViewRepresentable {
 
 struct ImportAudioView: View {
     @Environment(\.dismiss) var dismiss
+    @StateObject private var statusListener = RecordingStatusListener()
     @State private var showFilePicker = false
     @State private var isUploading = false
     @State private var uploadProgress: Double = 0.0
@@ -26,6 +27,7 @@ struct ImportAudioView: View {
     @State private var showError = false
     @State private var analyzedRecording: Recording?
     @State private var showRecordingDetail = false
+    @State private var processingMessage: String = "Uploading..."
 
     var body: some View {
         ZStack {
@@ -222,6 +224,30 @@ struct ImportAudioView: View {
             )
             .background(ClearBackgroundViewForImport())
         }
+        .onChange(of: statusListener.recording) { newRecording in
+            guard let recording = newRecording else { return }
+
+            print("📥 Recording status updated: \(recording.status.rawValue)")
+
+            if recording.status == .completed {
+                // Analysis completed
+                uploadProgress = 1.0
+                processingMessage = "Analysis complete!"
+
+                // Small delay to show 100%
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isUploading = false
+                    analyzedRecording = recording
+                    showRecordingDetail = true
+                }
+            } else if recording.status == .failed {
+                // Analysis failed
+                isUploading = false
+                uploadProgress = 0.0
+                errorMessage = "Analysis failed. Please try again."
+                showError = true
+            }
+        }
         .fullScreenCover(isPresented: $showRecordingDetail, onDismiss: {
             // When detail view is dismissed, go back to home
             dismiss()
@@ -281,20 +307,50 @@ struct ImportAudioView: View {
                     }
                 }
 
-                print("✅ Audio file analyzed successfully: \(recording.title)")
+                print("✅ Recording received: \(recording.title), status: \(recording.status.rawValue)")
 
-                // Complete progress to 100%
+                // Complete upload progress to 70%
                 await MainActor.run {
-                    uploadProgress = 1.0
+                    uploadProgress = 0.7
                 }
 
-                // Small delay to show 100% before transitioning
-                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
+                // Check recording status
+                if recording.status == .processing {
+                    // Start listening for Firestore updates
+                    await MainActor.run {
+                        processingMessage = "Processing on server..."
+                        guard let userId = AuthService.shared.currentUser?.uid else { return }
+                        statusListener.startListening(recordingId: recording.id, userId: userId)
+                    }
 
-                await MainActor.run {
-                    isUploading = false
-                    analyzedRecording = recording
-                    showRecordingDetail = true
+                    print("⏳ Recording is processing in background, waiting for updates...")
+
+                    // Progress simulation while waiting (70% -> 95%)
+                    for i in 70...95 {
+                        try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                        await MainActor.run {
+                            uploadProgress = Double(i) / 100.0
+                        }
+                    }
+
+                } else if recording.status == .completed {
+                    // Already completed (fast response)
+                    await MainActor.run {
+                        uploadProgress = 1.0
+                    }
+
+                    try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
+
+                    await MainActor.run {
+                        isUploading = false
+                        analyzedRecording = recording
+                        showRecordingDetail = true
+                    }
+                } else {
+                    // Failed status
+                    throw NSError(domain: "RecordingError", code: -1, userInfo: [
+                        NSLocalizedDescriptionKey: "Recording analysis failed on server"
+                    ])
                 }
             } catch {
                 print("❌ Error uploading audio: \(error)")
