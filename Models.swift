@@ -445,6 +445,12 @@ enum RecordingType: String, Codable {
     }
 }
 
+enum RecordingStatus: String, Codable {
+    case processing = "processing"
+    case completed = "completed"
+    case failed = "failed"
+}
+
 struct Recording: Identifiable, Codable {
     let id: String
     let title: String
@@ -452,7 +458,8 @@ struct Recording: Identifiable, Codable {
     let duration: TimeInterval // in seconds
     let type: RecordingType
     let aiDetected: Bool
-    let summary: RecordingSummary
+    let status: RecordingStatus
+    let summary: RecordingSummary?
     let sentiment: SentimentData?
     let transcript: [TranscriptSegment]
     let actionItems: [ActionItem]
