@@ -644,6 +644,7 @@ struct TranscriptSegmentView: View {
         duration: 2732, // 45:32
         type: .meeting,
         aiDetected: true,
+        status: .completed,
         summary: RecordingSummary(
             brief: "Q4 hedefleri ve yeni ürün lansmanı tartışıldı",
             detailed: "Q4 hedefleri ve yeni ürün lansmanı tartışıldı. The team discussed various strategic initiatives and aligned on key deliverables for the upcoming quarter.",

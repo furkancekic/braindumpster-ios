@@ -262,6 +262,7 @@ struct AIMessage: Identifiable {
         duration: 2732,
         type: .meeting,
         aiDetected: true,
+        status: .completed,
         summary: RecordingSummary(
             brief: "Q4 hedefleri ve yeni ürün lansmanı tartışıldı",
             detailed: "Test summary",

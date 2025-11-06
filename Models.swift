@@ -451,7 +451,7 @@ enum RecordingStatus: String, Codable {
     case failed = "failed"
 }
 
-struct Recording: Identifiable, Codable {
+struct Recording: Identifiable, Codable, Equatable {
     let id: String
     let title: String
     let date: Date

@@ -338,7 +338,7 @@ struct RecordingCard: View {
                     .foregroundColor(Color(white: 0.5))
             }
 
-            Text(recording.summary.brief)
+            Text(recording.summary?.brief ?? "Processing...")
                 .font(.system(size: 14))
                 .foregroundColor(Color(white: 0.4))
                 .lineLimit(2)

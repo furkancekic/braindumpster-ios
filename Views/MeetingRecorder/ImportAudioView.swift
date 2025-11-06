@@ -319,7 +319,7 @@ struct ImportAudioView: View {
                     // Start listening for Firestore updates
                     await MainActor.run {
                         processingMessage = "Processing on server..."
-                        guard let userId = AuthService.shared.currentUser?.uid else { return }
+                        guard let userId = Auth.auth().currentUser?.uid else { return }
                         statusListener.startListening(recordingId: recording.id, userId: userId)
                     }
 
