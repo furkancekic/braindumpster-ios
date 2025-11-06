@@ -138,7 +138,7 @@ struct RecordingDetailView: View {
                                 Spacer()
                             }
 
-                            Text(recording.summary.detailed)
+                            Text(recording.summary?.detailed ?? "Analysis in progress...")
                                 .font(.system(size: 15))
                                 .foregroundColor(.white.opacity(0.9))
                                 .fixedSize(horizontal: false, vertical: true)
