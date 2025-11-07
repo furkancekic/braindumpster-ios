@@ -154,7 +154,7 @@ struct SpeakerMood: Codable, Identifiable {
     let speaker: String
     let mood: String // positive, neutral, negative
     let energy: Int // 0-100
-    let talkTimePercentage: Int
+    let talkTimePercentage: Double // Backend sends decimal values like 28.5
 
     enum CodingKeys: String, CodingKey {
         case speaker, mood, energy, talkTimePercentage

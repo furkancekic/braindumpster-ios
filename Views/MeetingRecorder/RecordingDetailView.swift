@@ -655,9 +655,9 @@ struct TranscriptSegmentView: View {
             score: 78,
             moments: [],
             speakerMoods: [
-                SpeakerMood(speaker: "Ahmet", mood: "positive", energy: 85, talkTimePercentage: 45),
-                SpeakerMood(speaker: "Elif", mood: "positive", energy: 75, talkTimePercentage: 35),
-                SpeakerMood(speaker: "Mehmet", mood: "neutral", energy: 60, talkTimePercentage: 20)
+                SpeakerMood(speaker: "Ahmet", mood: "positive", energy: 85, talkTimePercentage: 45.0),
+                SpeakerMood(speaker: "Elif", mood: "positive", energy: 75, talkTimePercentage: 35.0),
+                SpeakerMood(speaker: "Mehmet", mood: "neutral", energy: 60, talkTimePercentage: 20.0)
             ]
         ),
         transcript: [
