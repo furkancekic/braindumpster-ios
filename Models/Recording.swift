@@ -70,7 +70,23 @@ struct Recording: Identifiable, Codable {
 
         id = try container.decode(String.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
-        date = try container.decode(Date.self, forKey: .date)
+
+        // Decode date from ISO8601 string (Firestore stores dates as strings)
+        if let dateString = try? container.decode(String.self, forKey: .date) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let parsedDate = formatter.date(from: dateString) {
+                date = parsedDate
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                date = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            // Fallback to Date type if it's stored as Timestamp
+            date = try container.decode(Date.self, forKey: .date)
+        }
+
         duration = try container.decode(TimeInterval.self, forKey: .duration)
         type = try container.decode(RecordingType.self, forKey: .type)
         status = try container.decode(RecordingStatus.self, forKey: .status)
