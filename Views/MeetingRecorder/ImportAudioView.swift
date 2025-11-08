@@ -226,36 +226,63 @@ struct ImportAudioView: View {
             .background(ClearBackgroundViewForImport())
         }
         .onReceive(statusListener.$recording) { newRecording in
-            guard let recording = newRecording else { return }
+            print("🔔 [ImportAudioView.onReceive] Firestore update received")
 
-            print("📥 Recording status updated: \(recording.status.rawValue)")
+            guard let recording = newRecording else {
+                print("⚠️ [ImportAudioView.onReceive] Recording is nil, ignoring")
+                return
+            }
+
+            print("📥 [ImportAudioView.onReceive] Recording status: \(recording.status.rawValue)")
+            print("   Recording ID: \(recording.id)")
+            print("   Recording title: \(recording.title)")
+            print("   Has summary: \(recording.summary != nil)")
 
             _Concurrency.Task {
                 if recording.status == .completed {
+                    print("✅ [ImportAudioView.Task] Status is COMPLETED, updating UI")
+
                     // Analysis completed
                     await MainActor.run {
+                        print("🎯 [ImportAudioView.MainActor] Setting progress to 100%")
                         uploadProgress = 1.0
                         processingMessage = "Analysis complete!"
                     }
 
                     // Small delay to show 100%
+                    print("⏱️ [ImportAudioView.Task] Waiting 0.5s before showing detail view")
                     try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
                     await MainActor.run {
+                        print("🎯 [ImportAudioView.MainActor] Setting state to show detail view")
+                        print("   isUploading: \(self.isUploading) -> false")
+                        print("   showRecordingDetail: \(self.showRecordingDetail) -> true")
+
                         isUploading = false
                         analyzedRecording = recording
                         showRecordingDetail = true
+
+                        print("✅ [ImportAudioView.MainActor] State updated successfully")
+                        print("   isUploading: \(self.isUploading)")
+                        print("   showRecordingDetail: \(self.showRecordingDetail)")
+                        print("   analyzedRecording: \(self.analyzedRecording?.title ?? "nil")")
                     }
 
-                    print("✅ [ImportAudioView] Opening detail view for recording: \(recording.title)")
+                    print("🎉 [ImportAudioView] Opening detail view for recording: \(recording.title)")
                 } else if recording.status == .failed {
+                    print("❌ [ImportAudioView.Task] Status is FAILED, showing error")
+
                     // Analysis failed
                     await MainActor.run {
+                        print("🎯 [ImportAudioView.MainActor] Setting error state")
                         isUploading = false
                         uploadProgress = 0.0
                         errorMessage = "Analysis failed. Please try again."
                         showError = true
+                        print("✅ [ImportAudioView.MainActor] Error state set")
                     }
+                } else {
+                    print("ℹ️ [ImportAudioView.Task] Status is \(recording.status.rawValue), no action needed")
                 }
             }
         }
@@ -307,34 +334,61 @@ struct ImportAudioView: View {
         _Concurrency.Task {
             do {
                 // Upload to backend with real-time progress tracking
-                print("📤 Uploading audio file: \(url.lastPathComponent)")
+                print("📤 [ImportAudioView.Task] Uploading audio file to backend...")
+                print("   File: \(url.lastPathComponent)")
+                print("   Duration: \(duration)s")
+                print("   Size: \(String(format: "%.2f", fileSizeMB))MB")
+
                 let recording = try await BraindumpsterAPI.shared.analyzeRecording(
                     audioFileURL: url,
                     duration: duration
                 ) { progress in
                     _Concurrency.Task { @MainActor in
                         self.uploadProgress = progress
-                        print("📊 Upload progress: \(Int(progress * 100))%")
+                        if Int(progress * 100) % 10 == 0 {
+                            print("📊 [ImportAudioView.Upload] Upload progress: \(Int(progress * 100))%")
+                        }
                     }
                 }
 
-                print("✅ Recording received: \(recording.title), status: \(recording.status.rawValue)")
+                print("✅ [ImportAudioView.Task] Recording received from backend:")
+                print("   ID: \(recording.id)")
+                print("   Title: \(recording.title)")
+                print("   Status: \(recording.status.rawValue)")
+                print("   Has summary: \(recording.summary != nil)")
 
                 // Complete upload progress to 70%
                 await MainActor.run {
                     uploadProgress = 0.7
+                    print("📊 [ImportAudioView.MainActor] Upload complete (70%)")
                 }
 
                 // Check recording status
                 if recording.status == .processing {
+                    print("⏳ [ImportAudioView.Task] Status is PROCESSING, starting Firestore listener")
+
                     // Start listening for Firestore updates
                     await MainActor.run {
                         processingMessage = "Processing on server..."
-                        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+                        guard let userId = Auth.auth().currentUser?.uid else {
+                            print("❌ [ImportAudioView.MainActor] No authenticated user found!")
+                            return
+                        }
+
+                        print("👤 [ImportAudioView.MainActor] Starting Firestore listener:")
+                        print("   User ID: \(userId)")
+                        print("   Recording ID: \(recording.id)")
+                        print("   Path: users/\(userId)/recordings/\(recording.id)")
+                        print("   Listener is listening: \(statusListener.isListening)")
+
                         statusListener.startListening(recordingId: recording.id, userId: userId)
+
+                        print("✅ [ImportAudioView.MainActor] Firestore listener started")
+                        print("   Listener is listening: \(statusListener.isListening)")
                     }
 
-                    print("⏳ Recording is processing in background, waiting for updates...")
+                    print("⏳ [ImportAudioView.Task] Recording is processing in background, waiting for Firestore updates...")
 
                     // Progress simulation while waiting (70% -> 95%)
                     for i in 70...95 {
@@ -342,22 +396,34 @@ struct ImportAudioView: View {
                         await MainActor.run {
                             uploadProgress = Double(i) / 100.0
                         }
+                        if i % 5 == 0 {
+                            print("📊 [ImportAudioView.Task] Simulated progress: \(i)%")
+                        }
                     }
 
+                    print("⏸️ [ImportAudioView.Task] Reached 95%, waiting for Firestore update...")
+
                 } else if recording.status == .completed {
+                    print("⚡ [ImportAudioView.Task] Status is COMPLETED (fast response)")
+
                     // Already completed (fast response)
                     await MainActor.run {
                         uploadProgress = 1.0
+                        print("📊 [ImportAudioView.MainActor] Progress set to 100%")
                     }
 
                     try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
 
                     await MainActor.run {
+                        print("🎯 [ImportAudioView.MainActor] Setting state to show detail view")
                         isUploading = false
                         analyzedRecording = recording
                         showRecordingDetail = true
+                        print("✅ [ImportAudioView.MainActor] Detail view triggered")
                     }
                 } else {
+                    print("❌ [ImportAudioView.Task] Unexpected status: \(recording.status.rawValue)")
+
                     // Failed status
                     throw NSError(domain: "RecordingError", code: -1, userInfo: [
                         NSLocalizedDescriptionKey: "Recording analysis failed on server"

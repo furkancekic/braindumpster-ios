@@ -249,36 +249,63 @@ struct RecordingView: View {
             .background(ClearBackgroundView())
         }
         .onReceive(statusListener.$recording) { newRecording in
-            guard let recording = newRecording else { return }
+            print("🔔 [RecordingView.onReceive] Firestore update received")
 
-            print("📥 Recording status updated: \(recording.status.rawValue)")
+            guard let recording = newRecording else {
+                print("⚠️ [RecordingView.onReceive] Recording is nil, ignoring")
+                return
+            }
+
+            print("📥 [RecordingView.onReceive] Recording status: \(recording.status.rawValue)")
+            print("   Recording ID: \(recording.id)")
+            print("   Recording title: \(recording.title)")
+            print("   Has summary: \(recording.summary != nil)")
 
             _Concurrency.Task {
                 if recording.status == .completed {
+                    print("✅ [RecordingView.Task] Status is COMPLETED, updating UI")
+
                     // Analysis completed
                     await MainActor.run {
+                        print("🎯 [RecordingView.MainActor] Setting progress to 100%")
                         processingProgress = 1.0
                         processingMessage = "Analysis complete!"
                     }
 
                     // Small delay to show 100%
+                    print("⏱️ [RecordingView.Task] Waiting 0.5s before showing detail view")
                     try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
                     await MainActor.run {
+                        print("🎯 [RecordingView.MainActor] Setting state to show detail view")
+                        print("   isProcessing: \(self.isProcessing) -> false")
+                        print("   showRecordingDetail: \(self.showRecordingDetail) -> true")
+
                         isProcessing = false
                         analyzedRecording = recording
                         showRecordingDetail = true
+
+                        print("✅ [RecordingView.MainActor] State updated successfully")
+                        print("   isProcessing: \(self.isProcessing)")
+                        print("   showRecordingDetail: \(self.showRecordingDetail)")
+                        print("   analyzedRecording: \(self.analyzedRecording?.title ?? "nil")")
                     }
 
-                    print("✅ [RecordingView] Opening detail view for recording: \(recording.title)")
+                    print("🎉 [RecordingView] Opening detail view for recording: \(recording.title)")
                 } else if recording.status == .failed {
+                    print("❌ [RecordingView.Task] Status is FAILED, showing error")
+
                     // Analysis failed
                     await MainActor.run {
+                        print("🎯 [RecordingView.MainActor] Setting error state")
                         isProcessing = false
                         processingProgress = 0.0
                         errorMessage = "Analysis failed. Please try again."
                         showError = true
+                        print("✅ [RecordingView.MainActor] Error state set")
                     }
+                } else {
+                    print("ℹ️ [RecordingView.Task] Status is \(recording.status.rawValue), no action needed")
                 }
             }
         }
@@ -344,40 +371,68 @@ struct RecordingView: View {
         }
 
         // Show processing state and start progress animation
+        print("🎬 [RecordingView.stopRecording] Starting upload process")
+        print("   File URL: \(audioURL)")
+        print("   Duration: \(recordingDuration)s")
+        print("   File size: \(fileSizeMB)MB")
+
         isProcessing = true
         processingProgress = 0.0
 
         // Upload to backend and get analysis with real-time progress
         _Concurrency.Task {
             do {
-                print("📤 Uploading recording to backend...")
+                print("📤 [RecordingView.Task] Uploading recording to backend...")
                 let recording = try await BraindumpsterAPI.shared.analyzeRecording(
                     audioFileURL: audioURL,
                     duration: recordingDuration
                 ) { progress in
                     _Concurrency.Task { @MainActor in
                         self.processingProgress = progress
-                        print("📊 Upload progress: \(Int(progress * 100))%")
+                        if Int(progress * 100) % 10 == 0 {
+                            print("📊 [RecordingView.Upload] Upload progress: \(Int(progress * 100))%")
+                        }
                     }
                 }
 
-                print("✅ Recording received: \(recording.title), status: \(recording.status.rawValue)")
+                print("✅ [RecordingView.Task] Recording received from backend:")
+                print("   ID: \(recording.id)")
+                print("   Title: \(recording.title)")
+                print("   Status: \(recording.status.rawValue)")
+                print("   Has summary: \(recording.summary != nil)")
 
                 // Complete upload progress to 70%
                 await MainActor.run {
                     processingProgress = 0.7
+                    print("📊 [RecordingView.MainActor] Upload complete (70%)")
                 }
 
                 // Check recording status
                 if recording.status == .processing {
+                    print("⏳ [RecordingView.Task] Status is PROCESSING, starting Firestore listener")
+
                     // Start listening for Firestore updates
                     await MainActor.run {
                         processingMessage = "Processing on server..."
-                        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+                        guard let userId = Auth.auth().currentUser?.uid else {
+                            print("❌ [RecordingView.MainActor] No authenticated user found!")
+                            return
+                        }
+
+                        print("👤 [RecordingView.MainActor] Starting Firestore listener:")
+                        print("   User ID: \(userId)")
+                        print("   Recording ID: \(recording.id)")
+                        print("   Path: users/\(userId)/recordings/\(recording.id)")
+                        print("   Listener is listening: \(statusListener.isListening)")
+
                         statusListener.startListening(recordingId: recording.id, userId: userId)
+
+                        print("✅ [RecordingView.MainActor] Firestore listener started")
+                        print("   Listener is listening: \(statusListener.isListening)")
                     }
 
-                    print("⏳ Recording is processing in background, waiting for updates...")
+                    print("⏳ [RecordingView.Task] Recording is processing in background, waiting for Firestore updates...")
 
                     // Progress simulation while waiting (70% -> 95%)
                     for i in 70...95 {
@@ -385,22 +440,34 @@ struct RecordingView: View {
                         await MainActor.run {
                             processingProgress = Double(i) / 100.0
                         }
+                        if i % 5 == 0 {
+                            print("📊 [RecordingView.Task] Simulated progress: \(i)%")
+                        }
                     }
 
+                    print("⏸️ [RecordingView.Task] Reached 95%, waiting for Firestore update...")
+
                 } else if recording.status == .completed {
+                    print("⚡ [RecordingView.Task] Status is COMPLETED (fast response)")
+
                     // Already completed (fast response)
                     await MainActor.run {
                         processingProgress = 1.0
+                        print("📊 [RecordingView.MainActor] Progress set to 100%")
                     }
 
                     try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000) // 300ms
 
                     await MainActor.run {
+                        print("🎯 [RecordingView.MainActor] Setting state to show detail view")
                         isProcessing = false
                         analyzedRecording = recording
                         showRecordingDetail = true
+                        print("✅ [RecordingView.MainActor] Detail view triggered")
                     }
                 } else {
+                    print("❌ [RecordingView.Task] Unexpected status: \(recording.status.rawValue)")
+
                     // Failed status
                     throw NSError(domain: "RecordingError", code: -1, userInfo: [
                         NSLocalizedDescriptionKey: "Recording analysis failed on server"
