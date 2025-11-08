@@ -176,25 +176,45 @@ struct AllRecordingsView: View {
     }
 
     private func loadRecordings() {
+        print("🔄 [AllRecordingsView] Loading all recordings...")
+        print("   Filter: \(selectedFilter?.rawValue ?? "none")")
         isLoadingRecordings = true
 
         _Concurrency.Task {
             do {
+                print("📡 [AllRecordingsView] Calling API...")
                 let fetchedRecordings = try await BraindumpsterAPI.shared.getRecordings(
                     type: selectedFilter,
                     limit: 50
                 )
 
+                print("✅ [AllRecordingsView] API returned \(fetchedRecordings.count) recordings")
+                if fetchedRecordings.isEmpty {
+                    print("   ⚠️ [AllRecordingsView] No recordings found")
+                } else {
+                    for (index, recording) in fetchedRecordings.prefix(5).enumerated() {
+                        print("   \(index + 1). \(recording.title) (\(recording.status.rawValue))")
+                    }
+                    if fetchedRecordings.count > 5 {
+                        print("   ... and \(fetchedRecordings.count - 5) more")
+                    }
+                }
+
                 await MainActor.run {
+                    print("🎯 [AllRecordingsView] Updating state with \(fetchedRecordings.count) recordings")
                     recordings = fetchedRecordings
                     isLoadingRecordings = false
+                    print("✅ [AllRecordingsView] State updated. recordings.count = \(self.recordings.count)")
                 }
             } catch {
-                print("❌ Error loading recordings: \(error.localizedDescription)")
+                print("❌ [AllRecordingsView] Error loading recordings:")
+                print("   Error: \(error.localizedDescription)")
+                print("   Error type: \(type(of: error))")
 
                 await MainActor.run {
                     recordings = []
                     isLoadingRecordings = false
+                    print("⚠️ [AllRecordingsView] State cleared due to error")
                 }
             }
         }

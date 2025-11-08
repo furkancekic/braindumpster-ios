@@ -390,14 +390,23 @@ struct ImportAudioView: View {
 
                     print("⏳ [ImportAudioView.Task] Recording is processing in background, waiting for Firestore updates...")
 
+                    // Calculate realistic processing time based on duration
+                    // Typical processing: ~10-15 seconds per minute of audio
+                    let estimatedProcessingSeconds = max(60, Int(duration * 0.15)) // minimum 60s
+                    print("⏱️ [ImportAudioView.Task] Estimated processing time: \(estimatedProcessingSeconds)s for \(Int(duration))s audio")
+
                     // Progress simulation while waiting (70% -> 95%)
+                    // Spread over estimated time
+                    let totalSteps = 25 // 70% to 95% is 25 steps
+                    let delayPerStep = Double(estimatedProcessingSeconds) / Double(totalSteps)
+
                     for i in 70...95 {
-                        try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                        try? await _Concurrency.Task.sleep(nanoseconds: UInt64(delayPerStep * 1_000_000_000))
                         await MainActor.run {
                             uploadProgress = Double(i) / 100.0
                         }
                         if i % 5 == 0 {
-                            print("📊 [ImportAudioView.Task] Simulated progress: \(i)%")
+                            print("📊 [ImportAudioView.Task] Simulated progress: \(i)% (elapsed: ~\(Int((Double(i - 70) / Double(totalSteps)) * Double(estimatedProcessingSeconds)))s)")
                         }
                     }
 

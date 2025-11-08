@@ -282,32 +282,45 @@ struct MeetingRecorderHomeView: View {
     }
 
     private func loadRecentRecordings() {
-        print("🔄 Loading recent recordings...")
+        print("🔄 [MeetingRecorderHomeView] Loading recent recordings...")
         isLoadingRecordings = true
 
         _Concurrency.Task {
             do {
+                print("📡 [MeetingRecorderHomeView] Calling API...")
                 let recordings = try await BraindumpsterAPI.shared.getRecordings(limit: 3)
 
-                print("✅ Loaded \(recordings.count) recordings")
+                print("✅ [MeetingRecorderHomeView] API returned \(recordings.count) recordings")
                 if recordings.isEmpty {
-                    print("   ⚠️ No recordings found")
+                    print("   ⚠️ [MeetingRecorderHomeView] No recordings found - list is empty")
                 } else {
                     for (index, recording) in recordings.enumerated() {
-                        print("   \(index + 1). \(recording.title) - \(recording.date)")
+                        print("   \(index + 1). \(recording.title)")
+                        print("      ID: \(recording.id)")
+                        print("      Status: \(recording.status.rawValue)")
+                        print("      Date: \(recording.date)")
                     }
                 }
 
                 await MainActor.run {
+                    print("🎯 [MeetingRecorderHomeView] Updating state with \(recordings.count) recordings")
                     recentRecordings = recordings
                     isLoadingRecordings = false
+                    print("✅ [MeetingRecorderHomeView] State updated. recentRecordings.count = \(self.recentRecordings.count)")
                 }
             } catch {
-                print("❌ Error loading recordings: \(error.localizedDescription)")
+                print("❌ [MeetingRecorderHomeView] Error loading recordings:")
+                print("   Error: \(error.localizedDescription)")
+                print("   Error type: \(type(of: error))")
+
+                if let apiError = error as? URLError {
+                    print("   URLError code: \(apiError.code.rawValue)")
+                }
 
                 await MainActor.run {
                     recentRecordings = []
                     isLoadingRecordings = false
+                    print("⚠️ [MeetingRecorderHomeView] State cleared due to error")
                 }
             }
         }

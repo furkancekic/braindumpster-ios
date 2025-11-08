@@ -434,14 +434,23 @@ struct RecordingView: View {
 
                     print("⏳ [RecordingView.Task] Recording is processing in background, waiting for Firestore updates...")
 
+                    // Calculate realistic processing time based on duration
+                    // Typical processing: ~10-15 seconds per minute of audio
+                    let estimatedProcessingSeconds = max(60, Int(recordingDuration * 0.15)) // minimum 60s
+                    print("⏱️ [RecordingView.Task] Estimated processing time: \(estimatedProcessingSeconds)s for \(Int(recordingDuration))s audio")
+
                     // Progress simulation while waiting (70% -> 95%)
+                    // Spread over estimated time
+                    let totalSteps = 25 // 70% to 95% is 25 steps
+                    let delayPerStep = Double(estimatedProcessingSeconds) / Double(totalSteps)
+
                     for i in 70...95 {
-                        try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                        try? await _Concurrency.Task.sleep(nanoseconds: UInt64(delayPerStep * 1_000_000_000))
                         await MainActor.run {
                             processingProgress = Double(i) / 100.0
                         }
                         if i % 5 == 0 {
-                            print("📊 [RecordingView.Task] Simulated progress: \(i)%")
+                            print("📊 [RecordingView.Task] Simulated progress: \(i)% (elapsed: ~\(Int((Double(i - 70) / Double(totalSteps)) * Double(estimatedProcessingSeconds)))s)")
                         }
                     }
 
