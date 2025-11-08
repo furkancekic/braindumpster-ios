@@ -285,7 +285,50 @@ struct RecordingView: View {
             print("   Has summary: \(recording.summary != nil)")
 
             _Concurrency.Task {
-                if recording.status == .completed {
+                switch recording.status {
+                case .processing:
+                    print("⏳ [RecordingView.Task] Status: PROCESSING")
+                    await MainActor.run {
+                        processingProgress = 0.1
+                        processingMessage = "Processing..."
+                    }
+
+                case .transcribing:
+                    print("🎤 [RecordingView.Task] Status: TRANSCRIBING")
+                    await MainActor.run {
+                        processingProgress = recording.transcriptProgress ?? 0.3
+                        processingMessage = "Transcribing audio..."
+                    }
+
+                case .transcriptReady:
+                    print("📝 [RecordingView.Task] Status: TRANSCRIPT_READY")
+                    await MainActor.run {
+                        processingProgress = 0.5
+                        processingMessage = "Transcript ready!"
+                    }
+
+                case .analyzingQuick:
+                    print("🔍 [RecordingView.Task] Status: ANALYZING_QUICK")
+                    await MainActor.run {
+                        processingProgress = 0.6
+                        processingMessage = "Quick analysis..."
+                    }
+
+                case .previewReady:
+                    print("👁 [RecordingView.Task] Status: PREVIEW_READY")
+                    await MainActor.run {
+                        processingProgress = 0.75
+                        processingMessage = "Preview ready!"
+                    }
+
+                case .analyzingDeep:
+                    print("🧠 [RecordingView.Task] Status: ANALYZING_DEEP")
+                    await MainActor.run {
+                        processingProgress = 0.9
+                        processingMessage = "Deep analysis..."
+                    }
+
+                case .completed:
                     print("✅ [RecordingView.Task] Status is COMPLETED, updating UI")
 
                     // Analysis completed
@@ -315,7 +358,8 @@ struct RecordingView: View {
                     }
 
                     print("🎉 [RecordingView] Opening detail view for recording: \(recording.title)")
-                } else if recording.status == .failed {
+
+                case .failed:
                     print("❌ [RecordingView.Task] Status is FAILED, showing error")
 
                     // Analysis failed
@@ -327,8 +371,6 @@ struct RecordingView: View {
                         showError = true
                         print("✅ [RecordingView.MainActor] Error state set")
                     }
-                } else {
-                    print("ℹ️ [RecordingView.Task] Status is \(recording.status.rawValue), no action needed")
                 }
             }
         }

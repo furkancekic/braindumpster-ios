@@ -262,7 +262,50 @@ struct ImportAudioView: View {
             print("   Has summary: \(recording.summary != nil)")
 
             _Concurrency.Task {
-                if recording.status == .completed {
+                switch recording.status {
+                case .processing:
+                    print("⏳ [ImportAudioView.Task] Status: PROCESSING")
+                    await MainActor.run {
+                        uploadProgress = 0.1
+                        processingMessage = "Processing..."
+                    }
+
+                case .transcribing:
+                    print("🎤 [ImportAudioView.Task] Status: TRANSCRIBING")
+                    await MainActor.run {
+                        uploadProgress = recording.transcriptProgress ?? 0.3
+                        processingMessage = "Transcribing audio..."
+                    }
+
+                case .transcriptReady:
+                    print("📝 [ImportAudioView.Task] Status: TRANSCRIPT_READY")
+                    await MainActor.run {
+                        uploadProgress = 0.5
+                        processingMessage = "Transcript ready!"
+                    }
+
+                case .analyzingQuick:
+                    print("🔍 [ImportAudioView.Task] Status: ANALYZING_QUICK")
+                    await MainActor.run {
+                        uploadProgress = 0.6
+                        processingMessage = "Quick analysis..."
+                    }
+
+                case .previewReady:
+                    print("👁 [ImportAudioView.Task] Status: PREVIEW_READY")
+                    await MainActor.run {
+                        uploadProgress = 0.75
+                        processingMessage = "Preview ready!"
+                    }
+
+                case .analyzingDeep:
+                    print("🧠 [ImportAudioView.Task] Status: ANALYZING_DEEP")
+                    await MainActor.run {
+                        uploadProgress = 0.9
+                        processingMessage = "Deep analysis..."
+                    }
+
+                case .completed:
                     print("✅ [ImportAudioView.Task] Status is COMPLETED, updating UI")
 
                     // Analysis completed
@@ -293,7 +336,8 @@ struct ImportAudioView: View {
                     }
 
                     print("🎉 [ImportAudioView] Opening detail view for recording: \(recording.title)")
-                } else if recording.status == .failed {
+
+                case .failed:
                     print("❌ [ImportAudioView.Task] Status is FAILED, showing error")
 
                     // Analysis failed
@@ -306,8 +350,6 @@ struct ImportAudioView: View {
                         factRotationTimer?.invalidate()
                         print("✅ [ImportAudioView.MainActor] Error state set")
                     }
-                } else {
-                    print("ℹ️ [ImportAudioView.Task] Status is \(recording.status.rawValue), no action needed")
                 }
             }
         }

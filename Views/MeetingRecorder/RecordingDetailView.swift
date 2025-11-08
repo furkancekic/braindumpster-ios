@@ -172,6 +172,21 @@ struct RecordingDetailView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 24)
 
+                        // Transcript Section (if available)
+                        if let transcriptText = recording.transcriptText, !transcriptText.isEmpty {
+                            TranscriptViewer(
+                                transcript: transcriptText,
+                                progress: recording.transcriptProgress,
+                                isStreaming: recording.status == .transcribing
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.top, 24)
+                        } else if recording.status == .transcribing {
+                            TranscriptLoadingView(progress: recording.transcriptProgress ?? 0.0)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 24)
+                        }
+
                         // Meeting Insights (Collapsible)
                         if let sentiment = recording.sentiment {
                             Button(action: {

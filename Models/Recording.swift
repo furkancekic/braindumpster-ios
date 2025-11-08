@@ -100,6 +100,12 @@ struct Recording: Identifiable, Codable {
         actionItems.count
     }
 
+    enum CodingKeys: String, CodingKey {
+        case id, title, date, duration, type, aiDetected, status
+        case summary, sentiment, transcript, actionItems, keyPoints, decisions
+        case audioFileURL, transcriptText, transcriptProgress, analysisStage
+    }
+
     // Custom decoder to handle missing fields during processing
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -168,6 +174,34 @@ struct Recording: Identifiable, Codable {
         self.transcriptText = transcriptText
         self.transcriptProgress = transcriptProgress
         self.analysisStage = analysisStage
+    }
+
+    // Encoder to match the custom decoder
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+
+        // Encode date as ISO8601 string
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try container.encode(formatter.string(from: date), forKey: .date)
+
+        try container.encode(duration, forKey: .duration)
+        try container.encode(type, forKey: .type)
+        try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(summary, forKey: .summary)
+        try container.encodeIfPresent(audioFileURL, forKey: .audioFileURL)
+        try container.encode(aiDetected, forKey: .aiDetected)
+        try container.encodeIfPresent(sentiment, forKey: .sentiment)
+        try container.encode(transcript, forKey: .transcript)
+        try container.encode(actionItems, forKey: .actionItems)
+        try container.encode(keyPoints, forKey: .keyPoints)
+        try container.encode(decisions, forKey: .decisions)
+        try container.encodeIfPresent(transcriptText, forKey: .transcriptText)
+        try container.encodeIfPresent(transcriptProgress, forKey: .transcriptProgress)
+        try container.encodeIfPresent(analysisStage, forKey: .analysisStage)
     }
 }
 
