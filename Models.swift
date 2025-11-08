@@ -497,6 +497,7 @@ struct Recording: Identifiable, Codable, Equatable {
     let keyPoints: [KeyPoint]
     let decisions: [Decision]
     let audioFileURL: String?
+    let language: String? // Detected language (tr, en, de, etc.)
 
     // New fields for progressive loading
     let transcriptText: String? // Full transcript as single string
@@ -559,6 +560,7 @@ struct Recording: Identifiable, Codable, Equatable {
         actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
         keyPoints = try container.decodeIfPresent([KeyPoint].self, forKey: .keyPoints) ?? []
         decisions = try container.decodeIfPresent([Decision].self, forKey: .decisions) ?? []
+        language = try container.decodeIfPresent(String.self, forKey: .language)
 
         // New progressive loading fields
         transcriptText = try container.decodeIfPresent(String.self, forKey: .transcriptText)
@@ -571,7 +573,7 @@ struct Recording: Identifiable, Codable, Equatable {
          aiDetected: Bool, status: RecordingStatus, summary: RecordingSummary?,
          sentiment: SentimentData?, transcript: [TranscriptSegment],
          actionItems: [ActionItem], keyPoints: [KeyPoint],
-         decisions: [Decision], audioFileURL: String?,
+         decisions: [Decision], audioFileURL: String?, language: String? = nil,
          transcriptText: String? = nil, transcriptProgress: Double? = nil,
          analysisStage: String? = nil) {
         self.id = id
@@ -588,6 +590,7 @@ struct Recording: Identifiable, Codable, Equatable {
         self.keyPoints = keyPoints
         self.decisions = decisions
         self.audioFileURL = audioFileURL
+        self.language = language
         self.transcriptText = transcriptText
         self.transcriptProgress = transcriptProgress
         self.analysisStage = analysisStage
