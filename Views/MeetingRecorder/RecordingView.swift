@@ -30,6 +30,8 @@ struct RecordingView: View {
     @State private var analyzedRecording: Recording?
     @State private var showRecordingDetail = false
     @State private var processingMessage: String = "Uploading..."
+    @State private var currentFact: String = DidYouKnowFacts.randomFact()
+    @State private var factRotationTimer: Timer?
 
     var body: some View {
         ZStack {
@@ -109,6 +111,27 @@ struct RecordingView: View {
                             Text(processingProgress < 0.7 ? "Uploading audio..." : "AI is analyzing in background...")
                                 .font(.system(size: 15))
                                 .foregroundColor(.white.opacity(0.7))
+                        }
+
+                        // Did you know? section
+                        if processingProgress >= 0.7 {
+                            VStack(spacing: 8) {
+                                Text("Did you know?")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
+                                    .textCase(.uppercase)
+                                    .tracking(1.2)
+
+                                Text(currentFact)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                                    .id(currentFact) // Force re-render on change
+                            }
+                            .padding(.top, 20)
                         }
                     }
                 } else if !isRecording {
@@ -378,6 +401,15 @@ struct RecordingView: View {
 
         isProcessing = true
         processingProgress = 0.0
+        currentFact = DidYouKnowFacts.randomFact()
+
+        // Start fact rotation timer (change fact every 8 seconds)
+        factRotationTimer?.invalidate()
+        factRotationTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentFact = DidYouKnowFacts.randomFact()
+            }
+        }
 
         // Upload to backend and get analysis with real-time progress
         _Concurrency.Task {

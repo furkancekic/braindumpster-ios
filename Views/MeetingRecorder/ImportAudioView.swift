@@ -29,6 +29,8 @@ struct ImportAudioView: View {
     @State private var analyzedRecording: Recording?
     @State private var showRecordingDetail = false
     @State private var processingMessage: String = "Uploading..."
+    @State private var currentFact: String = DidYouKnowFacts.randomFact()
+    @State private var factRotationTimer: Timer?
 
     var body: some View {
         ZStack {
@@ -121,9 +123,30 @@ struct ImportAudioView: View {
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.black)
 
-                            Text("AI is transcribing and creating insights")
+                            Text(uploadProgress < 0.7 ? "Uploading audio..." : "AI is transcribing and creating insights")
                                 .font(.system(size: 15))
                                 .foregroundColor(Color(white: 0.5))
+                        }
+
+                        // Did you know? section
+                        if uploadProgress >= 0.7 {
+                            VStack(spacing: 8) {
+                                Text("Did you know?")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.35, green: 0.61, blue: 0.95))
+                                    .textCase(.uppercase)
+                                    .tracking(1.2)
+
+                                Text(currentFact)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(white: 0.3))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                                    .id(currentFact) // Force re-render on change
+                            }
+                            .padding(.top, 20)
                         }
 
                         Spacer()
@@ -247,6 +270,7 @@ struct ImportAudioView: View {
                         print("🎯 [ImportAudioView.MainActor] Setting progress to 100%")
                         uploadProgress = 1.0
                         processingMessage = "Analysis complete!"
+                        factRotationTimer?.invalidate()
                     }
 
                     // Small delay to show 100%
@@ -279,6 +303,7 @@ struct ImportAudioView: View {
                         uploadProgress = 0.0
                         errorMessage = "Analysis failed. Please try again."
                         showError = true
+                        factRotationTimer?.invalidate()
                         print("✅ [ImportAudioView.MainActor] Error state set")
                     }
                 } else {
@@ -386,6 +411,14 @@ struct ImportAudioView: View {
 
                         print("✅ [ImportAudioView.MainActor] Firestore listener started")
                         print("   Listener is listening: \(statusListener.isListening)")
+
+                        // Start fact rotation timer (change fact every 8 seconds)
+                        factRotationTimer?.invalidate()
+                        factRotationTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentFact = DidYouKnowFacts.randomFact()
+                            }
+                        }
                     }
 
                     print("⏳ [ImportAudioView.Task] Recording is processing in background, waiting for Firestore updates...")
