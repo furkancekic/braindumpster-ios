@@ -253,23 +253,27 @@ struct RecordingView: View {
 
             print("📥 Recording status updated: \(recording.status.rawValue)")
 
-            if recording.status == .completed {
-                // Analysis completed
-                processingProgress = 1.0
-                processingMessage = "Analysis complete!"
+            Task { @MainActor in
+                if recording.status == .completed {
+                    // Analysis completed
+                    processingProgress = 1.0
+                    processingMessage = "Analysis complete!"
 
-                // Small delay to show 100%
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    // Small delay to show 100%
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
                     isProcessing = false
                     analyzedRecording = recording
                     showRecordingDetail = true
+
+                    print("✅ [RecordingView] Opening detail view for recording: \(recording.title)")
+                } else if recording.status == .failed {
+                    // Analysis failed
+                    isProcessing = false
+                    processingProgress = 0.0
+                    errorMessage = "Analysis failed. Please try again."
+                    showError = true
                 }
-            } else if recording.status == .failed {
-                // Analysis failed
-                isProcessing = false
-                processingProgress = 0.0
-                errorMessage = "Analysis failed. Please try again."
-                showError = true
             }
         }
         .fullScreenCover(isPresented: $showRecordingDetail, onDismiss: {

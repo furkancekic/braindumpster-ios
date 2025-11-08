@@ -49,9 +49,12 @@ class RecordingStatusListener: ObservableObject {
                 }
 
                 // Auto-stop listening when completed or failed
+                // Delay stopping to ensure the update is fully processed
                 if recording.status == .completed || recording.status == .failed {
-                    print("✅ [RecordingStatusListener] Recording finished (\(recording.status.rawValue)), stopping listener")
-                    self.stopListening()
+                    print("✅ [RecordingStatusListener] Recording finished (\(recording.status.rawValue)), will stop listener shortly")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        self.stopListening()
+                    }
                 }
 
             } catch {

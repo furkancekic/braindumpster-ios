@@ -1751,7 +1751,8 @@ extension BraindumpsterAPI {
 
         // Decode response
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        // Note: Recording model has custom date decoder, don't override it
+        // decoder.dateDecodingStrategy = .iso8601 // Removed to avoid conflict
 
         struct RecordingsResponse: Codable {
             let success: Bool
