@@ -547,10 +547,10 @@ struct ActionItemCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Button(action: {
-                actionItem.isCompleted = !(actionItem.isCompleted ?? false)
+                actionItem.isCompleted = !actionItem.isCompleted
             }) {
                 ZStack {
-                    if actionItem.isCompleted == true {
+                    if actionItem.isCompleted {
                         Circle()
                             .fill(Color(red: 0.30, green: 0.69, blue: 0.31))
                             .frame(width: 24, height: 24)
