@@ -253,26 +253,32 @@ struct RecordingView: View {
 
             print("📥 Recording status updated: \(recording.status.rawValue)")
 
-            Task { @MainActor in
+            _Concurrency.Task {
                 if recording.status == .completed {
                     // Analysis completed
-                    processingProgress = 1.0
-                    processingMessage = "Analysis complete!"
+                    await MainActor.run {
+                        processingProgress = 1.0
+                        processingMessage = "Analysis complete!"
+                    }
 
                     // Small delay to show 100%
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
-                    isProcessing = false
-                    analyzedRecording = recording
-                    showRecordingDetail = true
+                    await MainActor.run {
+                        isProcessing = false
+                        analyzedRecording = recording
+                        showRecordingDetail = true
+                    }
 
                     print("✅ [RecordingView] Opening detail view for recording: \(recording.title)")
                 } else if recording.status == .failed {
                     // Analysis failed
-                    isProcessing = false
-                    processingProgress = 0.0
-                    errorMessage = "Analysis failed. Please try again."
-                    showError = true
+                    await MainActor.run {
+                        isProcessing = false
+                        processingProgress = 0.0
+                        errorMessage = "Analysis failed. Please try again."
+                        showError = true
+                    }
                 }
             }
         }
