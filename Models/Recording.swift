@@ -181,10 +181,23 @@ struct ActionItem: Codable, Identifiable {
     let priority: String // high, medium, low
     let timestamp: String // "MM:SS"
     let context: String // Why this task came up
-    var isCompleted: Bool = false
+    var isCompleted: Bool?
 
     enum CodingKeys: String, CodingKey {
         case task, assignee, dueDate, priority, timestamp, context, isCompleted
+    }
+
+    // Provide default value for isCompleted if not present in JSON
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        task = try container.decode(String.self, forKey: .task)
+        assignee = try container.decode(String.self, forKey: .assignee)
+        dueDate = try container.decodeIfPresent(String.self, forKey: .dueDate)
+        priority = try container.decode(String.self, forKey: .priority)
+        timestamp = try container.decode(String.self, forKey: .timestamp)
+        context = try container.decode(String.self, forKey: .context)
+        isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted)
     }
 }
 

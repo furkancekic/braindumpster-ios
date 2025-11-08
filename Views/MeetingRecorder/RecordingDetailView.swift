@@ -532,10 +532,10 @@ struct ActionItemCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Button(action: {
-                actionItem.isCompleted.toggle()
+                actionItem.isCompleted = !(actionItem.isCompleted ?? false)
             }) {
                 ZStack {
-                    if actionItem.isCompleted {
+                    if actionItem.isCompleted == true {
                         Circle()
                             .fill(Color(red: 0.30, green: 0.69, blue: 0.31))
                             .frame(width: 24, height: 24)
@@ -555,8 +555,8 @@ struct ActionItemCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(actionItem.task)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(actionItem.isCompleted ? Color(white: 0.6) : .black)
-                    .strikethrough(actionItem.isCompleted)
+                    .foregroundColor(actionItem.isCompleted == true ? Color(white: 0.6) : .black)
+                    .strikethrough(actionItem.isCompleted == true)
 
                 HStack(spacing: 8) {
                     Text(actionItem.assignee)
