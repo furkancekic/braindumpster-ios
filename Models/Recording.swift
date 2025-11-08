@@ -24,8 +24,39 @@ enum RecordingType: String, Codable {
 
 enum RecordingStatus: String, Codable {
     case processing = "processing"
+    case transcribing = "transcribing"
+    case transcriptReady = "transcript_ready"
+    case analyzingQuick = "analyzing_quick"
+    case previewReady = "preview_ready"
+    case analyzingDeep = "analyzing_deep"
     case completed = "completed"
     case failed = "failed"
+
+    var displayText: String {
+        switch self {
+        case .processing: return "Processing..."
+        case .transcribing: return "Transcribing audio..."
+        case .transcriptReady: return "Transcript ready"
+        case .analyzingQuick: return "Analyzing..."
+        case .previewReady: return "Preview ready"
+        case .analyzingDeep: return "Deep analysis..."
+        case .completed: return "Complete"
+        case .failed: return "Failed"
+        }
+    }
+
+    var progressPercentage: Double {
+        switch self {
+        case .processing: return 0.1
+        case .transcribing: return 0.3
+        case .transcriptReady: return 0.5
+        case .analyzingQuick: return 0.6
+        case .previewReady: return 0.75
+        case .analyzingDeep: return 0.9
+        case .completed: return 1.0
+        case .failed: return 0.0
+        }
+    }
 }
 
 struct Recording: Identifiable, Codable {
@@ -43,6 +74,11 @@ struct Recording: Identifiable, Codable {
     let keyPoints: [KeyPoint]
     let decisions: [Decision]
     let audioFileURL: String?
+
+    // New fields for progressive loading
+    let transcriptText: String? // Full transcript as single string
+    let transcriptProgress: Double? // 0.0-1.0 for transcription progress
+    let analysisStage: String? // Current analysis stage
 
     var durationFormatted: String {
         let hours = Int(duration) / 3600
@@ -100,6 +136,11 @@ struct Recording: Identifiable, Codable {
         actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
         keyPoints = try container.decodeIfPresent([KeyPoint].self, forKey: .keyPoints) ?? []
         decisions = try container.decodeIfPresent([Decision].self, forKey: .decisions) ?? []
+
+        // New progressive loading fields
+        transcriptText = try container.decodeIfPresent(String.self, forKey: .transcriptText)
+        transcriptProgress = try container.decodeIfPresent(Double.self, forKey: .transcriptProgress)
+        analysisStage = try container.decodeIfPresent(String.self, forKey: .analysisStage)
     }
 
     // Keep standard init for creating Recording objects in code
@@ -107,7 +148,9 @@ struct Recording: Identifiable, Codable {
          aiDetected: Bool, status: RecordingStatus, summary: RecordingSummary?,
          sentiment: SentimentData?, transcript: [TranscriptSegment],
          actionItems: [ActionItem], keyPoints: [KeyPoint],
-         decisions: [Decision], audioFileURL: String?) {
+         decisions: [Decision], audioFileURL: String?,
+         transcriptText: String? = nil, transcriptProgress: Double? = nil,
+         analysisStage: String? = nil) {
         self.id = id
         self.title = title
         self.date = date
@@ -122,6 +165,9 @@ struct Recording: Identifiable, Codable {
         self.keyPoints = keyPoints
         self.decisions = decisions
         self.audioFileURL = audioFileURL
+        self.transcriptText = transcriptText
+        self.transcriptProgress = transcriptProgress
+        self.analysisStage = analysisStage
     }
 }
 

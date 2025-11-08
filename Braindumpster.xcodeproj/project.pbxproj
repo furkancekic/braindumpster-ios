@@ -29,6 +29,7 @@
 		64729D19A28D5C1EC127F2CB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2F5A5E011CECEEA42EC3E6 /* AppDelegate.swift */; };
 		648E31CCDAE52EC96B43551A /* MeetingRecorderHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37F827AE2C10F5C05B8CC19E /* MeetingRecorderHomeView.swift */; };
 		6671BEC317B447099D1B516F /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5240FE56FD18457FA075C2BA /* ErrorAlert.swift */; };
+		7039CD1DF8450844BC273483 /* TranscriptViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73218075ACB702A6F8702E7 /* TranscriptViewer.swift */; };
 		759607C9344178456750DE2C /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C76463088D60622B076A33 /* SignInView.swift */; };
 		7C529CCD42580803CC1C1992 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589B7D7E7988C75063FE3DB6 /* TaskDetailView.swift */; };
 		7C654E8DF3493DC7A7827B88 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 6323B296AC44D5CDB229B890 /* FirebaseAuth */; };
@@ -99,6 +100,7 @@
 		87FB3A52DCCB5BFC67BFD569 /* BraindumpsterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BraindumpsterApp.swift; sourceTree = "<group>"; };
 		8DF70DB9F6354E4EBAD8FC89 /* SubscriptionManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManagementView.swift; sourceTree = "<group>"; };
 		9227C6C028A13929D64CEB0D /* RecordingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecordingView.swift; path = Views/MeetingRecorder/RecordingView.swift; sourceTree = "<group>"; };
+		A73218075ACB702A6F8702E7 /* TranscriptViewer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TranscriptViewer.swift; path = Views/Components/TranscriptViewer.swift; sourceTree = "<group>"; };
 		AABDEED2908155770317B195 /* DidYouKnowFacts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DidYouKnowFacts.swift; path = Utilities/DidYouKnowFacts.swift; sourceTree = "<group>"; };
 		AC2E4BA16601D8870EBB0531 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B3CD92FD7AA343F988BE0975 /* NativeStoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStoreManager.swift; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 			children = (
 				062306AF60FA42F181E5C1D9 /* ConfirmationView.swift */,
 				53F3AFCD3E6C725AF06B103A /* ErrorView.swift */,
+				A73218075ACB702A6F8702E7 /* TranscriptViewer.swift */,
 			);
 			name = Components;
 			sourceTree = "<group>";
@@ -369,6 +372,7 @@
 				1EB51B2E8344EAF9F1DEAF1D /* ErrorView.swift in Sources */,
 				250469495958818136587175 /* RecordingStatusListener.swift in Sources */,
 				FC7EE2C05800D019614BC792 /* DidYouKnowFacts.swift in Sources */,
+				7039CD1DF8450844BC273483 /* TranscriptViewer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
