@@ -172,21 +172,6 @@ struct RecordingDetailView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 24)
 
-                        // Transcript Section (if available)
-                        if let transcriptText = recording.transcriptText, !transcriptText.isEmpty {
-                            TranscriptViewer(
-                                transcript: transcriptText,
-                                progress: recording.transcriptProgress,
-                                isStreaming: recording.status == .transcribing
-                            )
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
-                        } else if recording.status == .transcribing {
-                            TranscriptLoadingView(progress: recording.transcriptProgress ?? 0.0)
-                                .padding(.horizontal, 20)
-                                .padding(.top, 24)
-                        }
-
                         // Meeting Insights (Collapsible)
                         if let sentiment = recording.sentiment {
                             Button(action: {
@@ -547,10 +532,10 @@ struct ActionItemCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Button(action: {
-                actionItem.isCompleted = !actionItem.isCompleted
+                actionItem.isCompleted = !(actionItem.isCompleted ?? false)
             }) {
                 ZStack {
-                    if actionItem.isCompleted {
+                    if actionItem.isCompleted == true {
                         Circle()
                             .fill(Color(red: 0.30, green: 0.69, blue: 0.31))
                             .frame(width: 24, height: 24)
