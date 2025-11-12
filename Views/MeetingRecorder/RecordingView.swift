@@ -64,7 +64,7 @@ struct RecordingView: View {
                 Spacer()
 
                 if isProcessing {
-                    // Processing state with progress bar
+                    // Processing state with progress bar and streaming transcript
                     VStack(spacing: 30) {
                         // Circular progress indicator
                         ZStack {
@@ -108,30 +108,44 @@ struct RecordingView: View {
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.white)
 
-                            Text(processingProgress < 0.7 ? "Uploading audio..." : "AI is analyzing in background...")
+                            Text(statusSubtitle)
                                 .font(.system(size: 15))
                                 .foregroundColor(.white.opacity(0.7))
                         }
 
-                        // Did you know? section
+                        // Show streaming transcript or "Did you know?" facts
                         if processingProgress >= 0.7 {
-                            VStack(spacing: 8) {
-                                Text("Did you know?")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
-                                    .textCase(.uppercase)
-                                    .tracking(1.2)
+                            if let recording = statusListener.recording,
+                               !recording.transcript.isEmpty,
+                               [.transcribing, .transcriptReady, .analyzingQuick, .previewReady, .analyzingDeep].contains(recording.status) {
+                                // Show streaming transcript
+                                StreamingTranscriptView(
+                                    transcript: recording.transcript,
+                                    progress: recording.transcriptProgress ?? processingProgress,
+                                    isStreaming: recording.status == .transcribing
+                                )
+                                .frame(maxHeight: 400)
+                                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                            } else {
+                                // Show "Did you know?" facts while waiting
+                                VStack(spacing: 8) {
+                                    Text("Did you know?")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
+                                        .textCase(.uppercase)
+                                        .tracking(1.2)
 
-                                Text(currentFact)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.white.opacity(0.85))
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 40)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                                    .id(currentFact) // Force re-render on change
+                                    Text(currentFact)
+                                        .font(.system(size: 15))
+                                        .foregroundColor(.white.opacity(0.85))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 40)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                                        .id(currentFact) // Force re-render on change
+                                }
+                                .padding(.top, 20)
                             }
-                            .padding(.top, 20)
                         }
                     }
                 } else if !isRecording {
@@ -285,50 +299,61 @@ struct RecordingView: View {
             print("   Has summary: \(recording.summary != nil)")
 
             _Concurrency.Task {
-                if recording.status == .completed {
-                    print("✅ [RecordingView.Task] Status is COMPLETED, updating UI")
+                // Update progress based on status
+                await MainActor.run {
+                    switch recording.status {
+                    case .processing:
+                        processingProgress = 0.3
+                        processingMessage = "Processing..."
 
-                    // Analysis completed
-                    await MainActor.run {
-                        print("🎯 [RecordingView.MainActor] Setting progress to 100%")
+                    case .transcribing:
+                        // Use real transcript progress if available
+                        let transcriptProg = recording.transcriptProgress ?? 0.5
+                        processingProgress = 0.3 + (transcriptProg * 0.4) // 30% → 70%
+                        processingMessage = "Transcribing..."
+
+                    case .transcriptReady:
+                        processingProgress = 0.75
+                        processingMessage = "Transcript ready!"
+
+                    case .analyzingQuick:
+                        processingProgress = 0.80
+                        processingMessage = "Quick analysis..."
+
+                    case .previewReady:
+                        processingProgress = 0.85
+                        processingMessage = "Preview ready!"
+
+                    case .analyzingDeep:
+                        processingProgress = 0.90
+                        processingMessage = "Deep analysis..."
+
+                    case .completed:
+                        print("✅ [RecordingView.Task] Status is COMPLETED, updating UI")
                         processingProgress = 1.0
                         processingMessage = "Analysis complete!"
-                    }
 
-                    // Small delay to show 100%
-                    print("⏱️ [RecordingView.Task] Waiting 0.5s before showing detail view")
-                    try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        // Small delay to show 100%
+                        print("⏱️ [RecordingView.Task] Waiting 0.5s before showing detail view")
+                        _Concurrency.Task {
+                            try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
-                    await MainActor.run {
-                        print("🎯 [RecordingView.MainActor] Setting state to show detail view")
-                        print("   isProcessing: \(self.isProcessing) -> false")
-                        print("   showRecordingDetail: \(self.showRecordingDetail) -> true")
+                            await MainActor.run {
+                                print("🎯 [RecordingView.MainActor] Setting state to show detail view")
+                                isProcessing = false
+                                analyzedRecording = recording
+                                showRecordingDetail = true
+                                print("🎉 [RecordingView] Opening detail view for recording: \(recording.title)")
+                            }
+                        }
 
-                        isProcessing = false
-                        analyzedRecording = recording
-                        showRecordingDetail = true
-
-                        print("✅ [RecordingView.MainActor] State updated successfully")
-                        print("   isProcessing: \(self.isProcessing)")
-                        print("   showRecordingDetail: \(self.showRecordingDetail)")
-                        print("   analyzedRecording: \(self.analyzedRecording?.title ?? "nil")")
-                    }
-
-                    print("🎉 [RecordingView] Opening detail view for recording: \(recording.title)")
-                } else if recording.status == .failed {
-                    print("❌ [RecordingView.Task] Status is FAILED, showing error")
-
-                    // Analysis failed
-                    await MainActor.run {
-                        print("🎯 [RecordingView.MainActor] Setting error state")
+                    case .failed:
+                        print("❌ [RecordingView.Task] Status is FAILED, showing error")
                         isProcessing = false
                         processingProgress = 0.0
                         errorMessage = "Analysis failed. Please try again."
                         showError = true
-                        print("✅ [RecordingView.MainActor] Error state set")
                     }
-                } else {
-                    print("ℹ️ [RecordingView.Task] Status is \(recording.status.rawValue), no action needed")
                 }
             }
         }
@@ -351,6 +376,36 @@ struct RecordingView: View {
             return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
+
+    private var statusSubtitle: String {
+        if processingProgress < 0.7 {
+            return "Uploading audio..."
+        }
+
+        guard let recording = statusListener.recording else {
+            return "AI is analyzing in background..."
+        }
+
+        switch recording.status {
+        case .processing:
+            return "Preparing audio for analysis..."
+        case .transcribing:
+            let progress = Int((recording.transcriptProgress ?? 0) * 100)
+            return "Transcribing audio... \(progress)%"
+        case .transcriptReady:
+            return "Transcript complete! Analyzing content..."
+        case .analyzingQuick:
+            return "Generating summary and action items..."
+        case .previewReady:
+            return "Preview ready! Running deep analysis..."
+        case .analyzingDeep:
+            return "Deep analysis in progress..."
+        case .completed:
+            return "Analysis complete!"
+        case .failed:
+            return "Analysis failed"
         }
     }
 

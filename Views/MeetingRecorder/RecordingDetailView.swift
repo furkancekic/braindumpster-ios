@@ -136,32 +136,75 @@ struct RecordingDetailView: View {
                                     .foregroundColor(.white)
 
                                 Spacer()
+
+                                // Show status badge when analyzing
+                                if [.transcribing, .transcriptReady, .analyzingQuick].contains(recording.status) {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+
+                                        Text(recording.status.displayText)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.white.opacity(0.7))
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(8)
+                                }
                             }
 
-                            Text(recording.summary?.detailed ?? "Analysis in progress...")
-                                .font(.system(size: 15))
-                                .foregroundColor(.white.opacity(0.9))
-                                .fixedSize(horizontal: false, vertical: true)
-                                .lineSpacing(4)
+                            // Show summary or loading state
+                            if let summary = recording.summary, !summary.detailed.isEmpty {
+                                Text(summary.detailed)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .lineSpacing(4)
+                            } else if recording.status == .completed {
+                                Text("No summary available")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.6))
+                            } else {
+                                // Loading state
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white.opacity(0.7)))
 
-                            // Ask AI Button
-                            Button(action: {
-                                showAskAI = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "message")
-                                        .font(.system(size: 16))
+                                        Text("Generating summary...")
+                                            .font(.system(size: 15))
+                                            .foregroundColor(.white.opacity(0.7))
+                                    }
 
-                                    Text("Ask AI about this recording")
-                                        .font(.system(size: 16, weight: .medium))
+                                    Text("This usually takes 1-2 minutes")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.white.opacity(0.5))
                                 }
-                                .foregroundColor(.white.opacity(0.9))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    Color(red: 0.26, green: 0.30, blue: 0.38)
-                                )
-                                .cornerRadius(12)
+                                .padding(.vertical, 8)
+                            }
+
+                            // Ask AI Button (only when completed)
+                            if recording.status == .completed {
+                                Button(action: {
+                                    showAskAI = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "message")
+                                            .font(.system(size: 16))
+
+                                        Text("Ask AI about this recording")
+                                            .font(.system(size: 16, weight: .medium))
+                                    }
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        Color(red: 0.26, green: 0.30, blue: 0.38)
+                                    )
+                                    .cornerRadius(12)
+                                }
                             }
                         }
                         .padding(20)
@@ -239,7 +282,7 @@ struct RecordingDetailView: View {
                         // Stats Row
                         HStack(spacing: 16) {
                             StatCard(
-                                value: "\(recording.speakerCount)",
+                                value: "\(recording.computedSpeakerCount)",
                                 label: "Speakers"
                             )
 
@@ -257,15 +300,15 @@ struct RecordingDetailView: View {
                         .padding(.top, 24)
 
                         // Action Items Section
-                        if !actionItems.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack {
-                                    Text("Action Items")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.black)
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Action Items")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.black)
 
-                                    Spacer()
+                                Spacer()
 
+                                if !actionItems.isEmpty {
                                     Button(action: {
                                         // TODO: Add to calendar
                                     }) {
@@ -280,14 +323,31 @@ struct RecordingDetailView: View {
                                             )
                                     }
                                 }
+                            }
 
+                            if !actionItems.isEmpty {
                                 ForEach($actionItems) { $item in
                                     ActionItemCard(actionItem: $item)
                                 }
+                            } else if [.transcribing, .transcriptReady, .analyzingQuick].contains(recording.status) {
+                                // Loading state
+                                HStack {
+                                    ProgressView()
+
+                                    Text("Extracting action items...")
+                                        .font(.system(size: 15))
+                                        .foregroundColor(Color(white: 0.5))
+                                }
+                                .padding(.vertical, 20)
+                            } else {
+                                Text("No action items found")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(white: 0.5))
+                                    .padding(.vertical, 20)
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
 
                         // Key Points Section
                         if !recording.keyPoints.isEmpty {
@@ -305,22 +365,71 @@ struct RecordingDetailView: View {
                         }
 
                         // Full Transcript Section
-                        if !recording.transcript.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
                                 Text("Full Transcript")
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(.black)
 
+                                Spacer()
+
+                                // Show transcribing status
+                                if recording.status == .transcribing, let progress = recording.transcriptProgress {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+
+                                        Text("\(Int(progress * 100))%")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(Color(white: 0.5))
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color(white: 0.95))
+                                    .cornerRadius(8)
+                                }
+                            }
+
+                            if !recording.transcript.isEmpty {
                                 VStack(alignment: .leading, spacing: 16) {
                                     ForEach(recording.transcript) { segment in
                                         TranscriptSegmentView(segment: segment)
+                                    }
+
+                                    // Show "Transcribing..." message if still in progress
+                                    if recording.status == .transcribing {
+                                        HStack {
+                                            BlinkingCursor()
+
+                                            Text("Transcribing...")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Color(white: 0.5))
+                                        }
+                                        .padding(.top, 8)
                                     }
                                 }
                                 .padding(18)
                                 .background(Color(white: 0.97))
                                 .cornerRadius(16)
+                            } else if recording.status == .transcribing || recording.status == .processing {
+                                // Loading state
+                                HStack {
+                                    ProgressView()
 
-                                // Share and Export Buttons
+                                    Text("Starting transcription...")
+                                        .font(.system(size: 15))
+                                        .foregroundColor(Color(white: 0.5))
+                                }
+                                .padding(.vertical, 40)
+                            } else {
+                                Text("No transcript available")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(white: 0.5))
+                                    .padding(.vertical, 40)
+                            }
+
+                            // Share and Export Buttons (only if transcript exists)
+                            if !recording.transcript.isEmpty {
                                 HStack(spacing: 12) {
                                     Button(action: {
                                         showShareSheet = true
@@ -359,10 +468,10 @@ struct RecordingDetailView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
-                            .padding(.bottom, 32)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
                     }
                 }
             }

@@ -447,8 +447,39 @@ enum RecordingType: String, Codable {
 
 enum RecordingStatus: String, Codable {
     case processing = "processing"
+    case transcribing = "transcribing"
+    case transcriptReady = "transcript_ready"
+    case analyzingQuick = "analyzing_quick"
+    case previewReady = "preview_ready"
+    case analyzingDeep = "analyzing_deep"
     case completed = "completed"
     case failed = "failed"
+
+    var displayText: String {
+        switch self {
+        case .processing: return "Processing..."
+        case .transcribing: return "Transcribing audio..."
+        case .transcriptReady: return "Transcript ready"
+        case .analyzingQuick: return "Analyzing..."
+        case .previewReady: return "Preview ready"
+        case .analyzingDeep: return "Deep analysis..."
+        case .completed: return "Complete"
+        case .failed: return "Failed"
+        }
+    }
+
+    var progressRange: ClosedRange<Double> {
+        switch self {
+        case .processing: return 0.0...0.3
+        case .transcribing: return 0.3...0.7
+        case .transcriptReady: return 0.7...0.75
+        case .analyzingQuick: return 0.75...0.85
+        case .previewReady: return 0.85...0.90
+        case .analyzingDeep: return 0.90...0.95
+        case .completed: return 1.0...1.0
+        case .failed: return 0.0...0.0
+        }
+    }
 }
 
 struct Recording: Identifiable, Codable, Equatable {
@@ -467,6 +498,12 @@ struct Recording: Identifiable, Codable, Equatable {
     let decisions: [Decision]
     let audioFileURL: String?
 
+    // Progressive loading fields
+    let progress: Int?              // 0-100 (overall progress)
+    let transcriptProgress: Double? // 0.0-1.0 (transcription progress)
+    let language: String?
+    let speakerCount: Int?
+
     var durationFormatted: String {
         let hours = Int(duration) / 3600
         let minutes = (Int(duration) % 3600) / 60
@@ -479,8 +516,9 @@ struct Recording: Identifiable, Codable, Equatable {
         }
     }
 
-    var speakerCount: Int {
-        Set(transcript.map { $0.speaker }).count
+    var computedSpeakerCount: Int {
+        // Use backend-provided speakerCount if available, otherwise compute from transcript
+        speakerCount ?? Set(transcript.map { $0.speaker }).count
     }
 
     var taskCount: Int {
@@ -523,6 +561,12 @@ struct Recording: Identifiable, Codable, Equatable {
         actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
         keyPoints = try container.decodeIfPresent([KeyPoint].self, forKey: .keyPoints) ?? []
         decisions = try container.decodeIfPresent([Decision].self, forKey: .decisions) ?? []
+
+        // Progressive loading fields
+        progress = try container.decodeIfPresent(Int.self, forKey: .progress)
+        transcriptProgress = try container.decodeIfPresent(Double.self, forKey: .transcriptProgress)
+        language = try container.decodeIfPresent(String.self, forKey: .language)
+        speakerCount = try container.decodeIfPresent(Int.self, forKey: .speakerCount)
     }
 
     // Keep standard init for creating Recording objects in code
@@ -530,7 +574,9 @@ struct Recording: Identifiable, Codable, Equatable {
          aiDetected: Bool, status: RecordingStatus, summary: RecordingSummary?,
          sentiment: SentimentData?, transcript: [TranscriptSegment],
          actionItems: [ActionItem], keyPoints: [KeyPoint],
-         decisions: [Decision], audioFileURL: String?) {
+         decisions: [Decision], audioFileURL: String?,
+         progress: Int? = nil, transcriptProgress: Double? = nil,
+         language: String? = nil, speakerCount: Int? = nil) {
         self.id = id
         self.title = title
         self.date = date
@@ -545,6 +591,10 @@ struct Recording: Identifiable, Codable, Equatable {
         self.keyPoints = keyPoints
         self.decisions = decisions
         self.audioFileURL = audioFileURL
+        self.progress = progress
+        self.transcriptProgress = transcriptProgress
+        self.language = language
+        self.speakerCount = speakerCount
     }
 }
 
