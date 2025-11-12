@@ -427,12 +427,14 @@ enum RecordingType: String, Codable {
     case meeting = "meeting"
     case lecture = "lecture"
     case personal = "personal"
+    case unknown = "unknown"
 
     var icon: String {
         switch self {
         case .meeting: return "👥"
         case .lecture: return "📚"
         case .personal: return "✏️"
+        case .unknown: return "🎙️"
         }
     }
 
@@ -441,6 +443,7 @@ enum RecordingType: String, Codable {
         case .meeting: return "Meeting"
         case .lecture: return "Lecture"
         case .personal: return "Personal"
+        case .unknown: return "Recording"
         }
     }
 }
