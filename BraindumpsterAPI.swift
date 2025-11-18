@@ -1760,7 +1760,37 @@ extension BraindumpsterAPI {
             let count: Int
         }
 
-        let recordingsResponse = try decoder.decode(RecordingsResponse.self, from: data)
+        let recordingsResponse: RecordingsResponse
+        do {
+            recordingsResponse = try decoder.decode(RecordingsResponse.self, from: data)
+        } catch let DecodingError.keyNotFound(key, context) {
+            print("❌ [getRecordings] Decoding failed - missing key: \(key.stringValue)")
+            print("   Context: \(context.debugDescription)")
+            print("   Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            throw DecodingError.keyNotFound(key, context)
+        } catch let DecodingError.typeMismatch(type, context) {
+            print("❌ [getRecordings] Decoding failed - type mismatch for type: \(type)")
+            print("   Context: \(context.debugDescription)")
+            print("   Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            throw DecodingError.typeMismatch(type, context)
+        } catch let DecodingError.valueNotFound(type, context) {
+            print("❌ [getRecordings] Decoding failed - value not found for type: \(type)")
+            print("   Context: \(context.debugDescription)")
+            print("   Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            // Print raw JSON for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON response:")
+                print(jsonString)
+            }
+            throw DecodingError.valueNotFound(type, context)
+        } catch {
+            print("❌ [getRecordings] Unknown decoding error: \(error)")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON response:")
+                print(jsonString)
+            }
+            throw error
+        }
 
         print("✅ [getRecordings] Received \(recordingsResponse.count) recordings")
         if recordingsResponse.recordings.isEmpty {
