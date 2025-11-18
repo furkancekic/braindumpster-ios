@@ -10,6 +10,8 @@ struct RecordingDetailView: View {
     @State private var showShareSheet = false
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
+    @State private var showAllKeyPoints = false
+    @State private var showAllTranscript = false
 
     init(recording: Recording) {
         self.recording = recording
@@ -296,8 +298,30 @@ struct RecordingDetailView: View {
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(.black)
 
-                                ForEach(recording.keyPoints) { keyPoint in
+                                ForEach(Array(recording.keyPoints.prefix(showAllKeyPoints ? recording.keyPoints.count : 10))) { keyPoint in
                                     KeyPointCard(keyPoint: keyPoint)
+                                }
+
+                                // Show More button if there are more than 10 key points
+                                if recording.keyPoints.count > 10 {
+                                    Button(action: {
+                                        withAnimation {
+                                            showAllKeyPoints.toggle()
+                                        }
+                                    }) {
+                                        HStack {
+                                            Image(systemName: showAllKeyPoints ? "chevron.up" : "chevron.down")
+                                                .font(.system(size: 14, weight: .semibold))
+                                            Text(showAllKeyPoints ? "Show Less" : "Show More (\(recording.keyPoints.count - 10) more)")
+                                                .font(.system(size: 16, weight: .semibold))
+                                        }
+                                        .foregroundColor(Color(red: 0.35, green: 0.61, blue: 0.95))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color(red: 0.35, green: 0.61, blue: 0.95).opacity(0.1))
+                                        .cornerRadius(12)
+                                    }
+                                    .padding(.top, 8)
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -312,8 +336,29 @@ struct RecordingDetailView: View {
                                     .foregroundColor(.black)
 
                                 VStack(alignment: .leading, spacing: 16) {
-                                    ForEach(recording.transcript) { segment in
+                                    ForEach(Array(recording.transcript.prefix(showAllTranscript ? recording.transcript.count : 10))) { segment in
                                         TranscriptSegmentView(segment: segment)
+                                    }
+
+                                    // Show More button if there are more than 10 segments
+                                    if recording.transcript.count > 10 {
+                                        Button(action: {
+                                            withAnimation {
+                                                showAllTranscript.toggle()
+                                            }
+                                        }) {
+                                            HStack {
+                                                Image(systemName: showAllTranscript ? "chevron.up" : "chevron.down")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                Text(showAllTranscript ? "Show Less" : "Show More (\(recording.transcript.count - 10) more)")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                            }
+                                            .foregroundColor(Color(red: 0.35, green: 0.61, blue: 0.95))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 12)
+                                            .background(Color(red: 0.35, green: 0.61, blue: 0.95).opacity(0.1))
+                                            .cornerRadius(12)
+                                        }
                                     }
                                 }
                                 .padding(18)
