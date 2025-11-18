@@ -569,7 +569,12 @@ struct Recording: Identifiable, Codable, Equatable {
 struct RecordingSummary: Codable, Equatable {
     let brief: String // 1-2 sentences
     let detailed: String? // 3-4 paragraphs (optional for backward compatibility)
-    let keyTakeaways: [String]
+    let keyTakeaways: [String]? // optional for backward compatibility
+
+    // Provide default empty array for keyTakeaways if missing
+    var takeaways: [String] {
+        keyTakeaways ?? []
+    }
 }
 
 struct SentimentData: Codable, Equatable {
