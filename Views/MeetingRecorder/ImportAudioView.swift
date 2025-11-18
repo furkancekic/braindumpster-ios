@@ -32,6 +32,11 @@ struct ImportAudioView: View {
     @State private var currentFact: String = DidYouKnowFacts.randomFact()
     @State private var factRotationTimer: Timer?
 
+    // Timing measurements
+    @State private var uploadStartTime: Date?
+    @State private var uploadEndTime: Date?
+    @State private var analysisStartTime: Date?
+
     var body: some View {
         ZStack {
             Color.white
@@ -271,6 +276,29 @@ struct ImportAudioView: View {
                         uploadProgress = 1.0
                         processingMessage = "Analysis complete!"
                         factRotationTimer?.invalidate()
+
+                        // Calculate and log timing
+                        let analysisEndTime = Date()
+                        print("⏱️ ========================================")
+                        print("⏱️ ANALYSIS COMPLETED")
+                        print("⏱️ ========================================")
+
+                        if let analysisStart = analysisStartTime {
+                            let analysisDuration = analysisEndTime.timeIntervalSince(analysisStart)
+                            print("⏱️ Analysis duration: \(String(format: "%.2f", analysisDuration))s (\(String(format: "%.1f", analysisDuration / 60))min)")
+                        }
+
+                        if let uploadStart = uploadStartTime {
+                            let totalDuration = analysisEndTime.timeIntervalSince(uploadStart)
+                            print("⏱️ Total duration (upload + analysis): \(String(format: "%.2f", totalDuration))s (\(String(format: "%.1f", totalDuration / 60))min)")
+                        }
+
+                        if let uploadStart = uploadStartTime, let uploadEnd = uploadEndTime {
+                            let uploadDuration = uploadEnd.timeIntervalSince(uploadStart)
+                            print("⏱️ Upload duration: \(String(format: "%.2f", uploadDuration))s")
+                        }
+
+                        print("⏱️ ========================================")
                     }
 
                     // Small delay to show 100%
@@ -324,7 +352,11 @@ struct ImportAudioView: View {
     private func uploadAudioFile(_ url: URL) {
         isUploading = true
         uploadProgress = 0.0
+        uploadStartTime = Date()
 
+        print("⏱️ ========================================")
+        print("⏱️ UPLOAD STARTED at \(uploadStartTime!)")
+        print("⏱️ ========================================")
         print("📤 Starting upload for file: \(url.lastPathComponent)")
 
         // Check file size (limit to 100MB for long recordings)
@@ -385,6 +417,13 @@ struct ImportAudioView: View {
                 // Complete upload progress to 70%
                 await MainActor.run {
                     uploadProgress = 0.7
+                    uploadEndTime = Date()
+                    if let start = uploadStartTime {
+                        let uploadDuration = uploadEndTime!.timeIntervalSince(start)
+                        print("⏱️ ========================================")
+                        print("⏱️ UPLOAD COMPLETED in \(String(format: "%.2f", uploadDuration))s")
+                        print("⏱️ ========================================")
+                    }
                     print("📊 [ImportAudioView.MainActor] Upload complete (70%)")
                 }
 
@@ -395,6 +434,11 @@ struct ImportAudioView: View {
                     // Start listening for Firestore updates
                     await MainActor.run {
                         processingMessage = "Processing on server..."
+                        analysisStartTime = Date()
+
+                        print("⏱️ ========================================")
+                        print("⏱️ ANALYSIS STARTED at \(analysisStartTime!)")
+                        print("⏱️ ========================================")
 
                         guard let userId = Auth.auth().currentUser?.uid else {
                             print("❌ [ImportAudioView.MainActor] No authenticated user found!")
