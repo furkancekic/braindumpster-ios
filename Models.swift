@@ -427,12 +427,26 @@ enum RecordingType: String, Codable {
     case meeting = "meeting"
     case lecture = "lecture"
     case personal = "personal"
+    case interview = "interview"
+    case podcast = "podcast"
+    case presentation = "presentation"
+    case unknown = "unknown"
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = RecordingType(rawValue: rawValue) ?? .unknown
+    }
 
     var icon: String {
         switch self {
         case .meeting: return "👥"
         case .lecture: return "📚"
         case .personal: return "✏️"
+        case .interview: return "🎤"
+        case .podcast: return "🎙️"
+        case .presentation: return "📊"
+        case .unknown: return "📝"
         }
     }
 
@@ -441,6 +455,10 @@ enum RecordingType: String, Codable {
         case .meeting: return "Meeting"
         case .lecture: return "Lecture"
         case .personal: return "Personal"
+        case .interview: return "Interview"
+        case .podcast: return "Podcast"
+        case .presentation: return "Presentation"
+        case .unknown: return "Recording"
         }
     }
 }
@@ -550,7 +568,7 @@ struct Recording: Identifiable, Codable, Equatable {
 
 struct RecordingSummary: Codable, Equatable {
     let brief: String // 1-2 sentences
-    let detailed: String // 3-4 paragraphs
+    let detailed: String? // 3-4 paragraphs (optional for backward compatibility)
     let keyTakeaways: [String]
 }
 
