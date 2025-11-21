@@ -191,7 +191,15 @@ struct MeetingRecorderHomeView: View {
                             }
                             .padding(.horizontal, 20)
 
-                            if recentRecordings.isEmpty {
+                            if isLoadingRecordings {
+                                // Loading skeleton screens
+                                VStack(spacing: 12) {
+                                    ForEach(0..<3, id: \.self) { _ in
+                                        RecordingCardSkeleton()
+                                            .padding(.horizontal, 20)
+                                    }
+                                }
+                            } else if recentRecordings.isEmpty {
                                 VStack(spacing: 16) {
                                     Image(systemName: "mic.slash")
                                         .font(.system(size: 48))
@@ -379,6 +387,107 @@ struct RecordingCard: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Recording Card Skeleton (Loading State)
+struct RecordingCardSkeleton: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    // Title skeleton
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(white: 0.9))
+                        .frame(width: 200, height: 18)
+                        .shimmer(isAnimating: isAnimating)
+
+                    // Date skeleton
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(white: 0.9))
+                        .frame(width: 120, height: 14)
+                        .shimmer(isAnimating: isAnimating)
+                }
+
+                Spacer()
+
+                // Duration skeleton
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(white: 0.9))
+                    .frame(width: 50, height: 15)
+                    .shimmer(isAnimating: isAnimating)
+            }
+
+            // Summary skeleton (2 lines)
+            VStack(alignment: .leading, spacing: 4) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(white: 0.9))
+                    .frame(height: 14)
+                    .shimmer(isAnimating: isAnimating)
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(white: 0.9))
+                    .frame(width: 180, height: 14)
+                    .shimmer(isAnimating: isAnimating)
+            }
+
+            // Badges skeleton
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(white: 0.9))
+                    .frame(width: 80, height: 13)
+                    .shimmer(isAnimating: isAnimating)
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(white: 0.9))
+                    .frame(width: 60, height: 13)
+                    .shimmer(isAnimating: isAnimating)
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
+    }
+}
+
+// MARK: - Shimmer Effect Modifier
+struct ShimmerModifier: ViewModifier {
+    let isAnimating: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geometry in
+                    if isAnimating {
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.clear,
+                                Color.white.opacity(0.5),
+                                Color.clear
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geometry.size.width * 2)
+                        .offset(x: isAnimating ? geometry.size.width : -geometry.size.width)
+                    }
+                }
+            )
+            .clipped()
+    }
+}
+
+extension View {
+    func shimmer(isAnimating: Bool) -> some View {
+        self.modifier(ShimmerModifier(isAnimating: isAnimating))
     }
 }
 
