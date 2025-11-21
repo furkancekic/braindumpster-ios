@@ -12,6 +12,8 @@ struct RecordingDetailView: View {
     @State private var isDeleting = false
     @State private var showAllKeyPoints = false
     @State private var showAllTranscript = false
+    @State private var exportedPDFURL: URL?
+    @State private var isGeneratingPDF = false
 
     init(recording: Recording) {
         self.recording = recording
@@ -45,12 +47,12 @@ struct RecordingDetailView: View {
 
                                 Menu {
                                     Button(action: {
-                                        showShareSheet = true
+                                        exportToPDF()
                                     }) {
                                         Label("Share", systemImage: "square.and.arrow.up")
                                     }
                                     Button(action: {
-                                        // TODO: Export
+                                        exportToPDF()
                                     }) {
                                         Label("Export", systemImage: "arrow.down.doc")
                                     }
@@ -368,13 +370,19 @@ struct RecordingDetailView: View {
                                 // Share and Export Buttons
                                 HStack(spacing: 12) {
                                     Button(action: {
-                                        showShareSheet = true
+                                        exportToPDF()
                                     }) {
                                         HStack {
-                                            Image(systemName: "square.and.arrow.up")
-                                                .font(.system(size: 16))
+                                            if isGeneratingPDF {
+                                                ProgressView()
+                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                    .scaleEffect(0.8)
+                                            } else {
+                                                Image(systemName: "square.and.arrow.up")
+                                                    .font(.system(size: 16))
+                                            }
 
-                                            Text("Share")
+                                            Text(isGeneratingPDF ? "Generating..." : "Share")
                                                 .font(.system(size: 16, weight: .semibold))
                                         }
                                         .foregroundColor(.white)
@@ -385,15 +393,22 @@ struct RecordingDetailView: View {
                                         )
                                         .cornerRadius(12)
                                     }
+                                    .disabled(isGeneratingPDF)
 
                                     Button(action: {
-                                        // TODO: Export
+                                        exportToPDF()
                                     }) {
                                         HStack {
-                                            Image(systemName: "arrow.down.doc")
-                                                .font(.system(size: 16))
+                                            if isGeneratingPDF {
+                                                ProgressView()
+                                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                                    .scaleEffect(0.8)
+                                            } else {
+                                                Image(systemName: "arrow.down.doc")
+                                                    .font(.system(size: 16))
+                                            }
 
-                                            Text("Export")
+                                            Text(isGeneratingPDF ? "Generating..." : "Export")
                                                 .font(.system(size: 16, weight: .semibold))
                                         }
                                         .foregroundColor(.black)
@@ -402,6 +417,7 @@ struct RecordingDetailView: View {
                                         .background(Color(white: 0.94))
                                         .cornerRadius(12)
                                     }
+                                    .disabled(isGeneratingPDF)
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -414,6 +430,11 @@ struct RecordingDetailView: View {
             .navigationBarHidden(true)
             .sheet(isPresented: $showAskAI) {
                 AskAISheet(recording: recording)
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let url = exportedPDFURL {
+                    ShareSheet(items: [url])
+                }
             }
             .fullScreenCover(isPresented: $showDeleteConfirmation) {
                 ConfirmationView(
@@ -448,6 +469,59 @@ struct RecordingDetailView: View {
                         .background(Color(white: 0.2))
                         .cornerRadius(16)
                     }
+                }
+            }
+        }
+    }
+
+    private func exportToPDF() {
+        print("📄 Downloading PDF from backend for: \(recording.title)")
+        isGeneratingPDF = true
+
+        _Concurrency.Task {
+            do {
+                // Download PDF from backend
+                let pdfData = try await BraindumpsterAPI.shared.downloadRecordingPDF(recording.id)
+
+                print("✅ PDF downloaded from backend, size: \(pdfData.count) bytes")
+
+                // Create filename with timestamp
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd_HHmmss"
+                let dateString = dateFormatter.string(from: Date())
+
+                // Simple filename sanitization (backend handles language-aware sanitization)
+                let sanitizedTitle = recording.title
+                    .replacingOccurrences(of: " ", with: "_")
+                    .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-ığüşöçĞÜŞİÖÇ")).inverted)
+                    .joined()
+
+                let filename = "\(sanitizedTitle)_\(dateString).pdf"
+                print("📝 Saving PDF as: \(filename)")
+
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+
+                // Remove existing file if present
+                if FileManager.default.fileExists(atPath: tempURL.path) {
+                    try FileManager.default.removeItem(at: tempURL)
+                }
+
+                // Write PDF data to temp file
+                try pdfData.write(to: tempURL)
+                print("✅ PDF saved to: \(tempURL.path)")
+
+                await MainActor.run {
+                    exportedPDFURL = tempURL
+                    isGeneratingPDF = false
+                    showShareSheet = true
+                    print("📤 Opening share sheet")
+                }
+            } catch {
+                print("❌ Error downloading PDF: \(error.localizedDescription)")
+
+                await MainActor.run {
+                    isGeneratingPDF = false
+                    // TODO: Show error to user
                 }
             }
         }

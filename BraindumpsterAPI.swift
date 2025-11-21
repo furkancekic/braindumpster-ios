@@ -1879,4 +1879,52 @@ extension BraindumpsterAPI {
         let chatResponse = try JSONDecoder().decode(ChatResponse.self, from: data)
         return chatResponse.response
     }
+
+    // MARK: - PDF Export
+
+    /// Download PDF report for a recording
+    /// Returns the PDF data as Data
+    func downloadRecordingPDF(_ recordingId: String) async throws -> Data {
+        let endpoint = "\(baseURL)/meetings/\(recordingId)/pdf"
+
+        print("📄 [downloadPDF] Downloading PDF from: \(endpoint)")
+
+        // Get Firebase auth token
+        let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            AuthService.shared.getIdToken { result in
+                continuation.resume(with: result)
+            }
+        }
+
+        // Create request
+        guard let url = URL(string: endpoint) else {
+            throw APIError.serverError("Invalid PDF endpoint URL")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 60 // PDF generation might take time
+
+        // Perform request
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        // Check response
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        print("📄 [downloadPDF] Response status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [downloadPDF] Error: \(errorString)")
+            }
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        print("✅ [downloadPDF] PDF downloaded successfully, size: \(data.count) bytes")
+
+        return data
+    }
 }

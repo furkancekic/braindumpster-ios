@@ -124,17 +124,17 @@ struct ImportAudioView: View {
                         }
 
                         VStack(spacing: 12) {
-                            Text("Analyzing audio...")
+                            Text(processingMessage)
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.black)
 
-                            Text(uploadProgress < 0.7 ? "Uploading audio..." : "AI is transcribing and creating insights")
+                            Text(subtitleMessage)
                                 .font(.system(size: 15))
                                 .foregroundColor(Color(white: 0.5))
                         }
 
                         // Did you know? section
-                        if uploadProgress >= 0.7 {
+                        if uploadProgress >= 0.3 {
                             VStack(spacing: 8) {
                                 Text("Did you know?")
                                     .font(.system(size: 13, weight: .semibold))
@@ -349,6 +349,24 @@ struct ImportAudioView: View {
         }
     }
 
+    private var subtitleMessage: String {
+        if uploadProgress < 0.3 {
+            return "Uploading audio to server..."
+        } else if uploadProgress < 0.45 {
+            return "Audio file received, starting analysis..."
+        } else if uploadProgress < 0.6 {
+            return "Breaking down audio into segments..."
+        } else if uploadProgress < 0.75 {
+            return "AI is analyzing conversation patterns..."
+        } else if uploadProgress < 0.85 {
+            return "Identifying key insights and topics..."
+        } else if uploadProgress < 0.95 {
+            return "Generating summary and action items..."
+        } else {
+            return "Just a few more seconds..."
+        }
+    }
+
     private func uploadAudioFile(_ url: URL) {
         isUploading = true
         uploadProgress = 0.0
@@ -401,9 +419,11 @@ struct ImportAudioView: View {
                     duration: duration
                 ) { progress in
                     _Concurrency.Task { @MainActor in
-                        self.uploadProgress = progress
+                        // Scale upload progress to only go up to 30% (not 100%)
+                        // This leaves room for the 105-second analysis simulation
+                        self.uploadProgress = progress * 0.3
                         if Int(progress * 100) % 10 == 0 {
-                            print("📊 [ImportAudioView.Upload] Upload progress: \(Int(progress * 100))%")
+                            print("📊 [ImportAudioView.Upload] Upload progress: \(Int(self.uploadProgress * 100))%")
                         }
                     }
                 }
@@ -414,9 +434,9 @@ struct ImportAudioView: View {
                 print("   Status: \(recording.status.rawValue)")
                 print("   Has summary: \(recording.summary != nil)")
 
-                // Complete upload progress to 70%
+                // Complete upload progress to 30%
                 await MainActor.run {
-                    uploadProgress = 0.7
+                    uploadProgress = 0.3
                     uploadEndTime = Date()
                     if let start = uploadStartTime {
                         let uploadDuration = uploadEndTime!.timeIntervalSince(start)
@@ -424,7 +444,7 @@ struct ImportAudioView: View {
                         print("⏱️ UPLOAD COMPLETED in \(String(format: "%.2f", uploadDuration))s")
                         print("⏱️ ========================================")
                     }
-                    print("📊 [ImportAudioView.MainActor] Upload complete (70%)")
+                    print("📊 [ImportAudioView.MainActor] Upload complete (30%)")
                 }
 
                 // Check recording status
@@ -467,23 +487,36 @@ struct ImportAudioView: View {
 
                     print("⏳ [ImportAudioView.Task] Recording is processing in background, waiting for Firestore updates...")
 
-                    // Calculate realistic processing time based on duration
-                    // Typical processing: ~10-15 seconds per minute of audio
-                    let estimatedProcessingSeconds = max(60, Int(duration * 0.15)) // minimum 60s
-                    print("⏱️ [ImportAudioView.Task] Estimated processing time: \(estimatedProcessingSeconds)s for \(Int(duration))s audio")
+                    // Realistic processing time: 90-120 seconds (1.5-2 minutes)
+                    let totalProcessingTime: Double = 105 // 1 minute 45 seconds
+                    print("⏱️ [ImportAudioView.Task] Estimated processing time: \(Int(totalProcessingTime))s")
 
-                    // Progress simulation while waiting (70% -> 95%)
-                    // Spread over estimated time
-                    let totalSteps = 25 // 70% to 95% is 25 steps
-                    let delayPerStep = Double(estimatedProcessingSeconds) / Double(totalSteps)
+                    // Progress simulation stages with messages (30% -> 95%)
+                    // Total: 105 seconds spread across 65% progress
+                    let stages: [(range: ClosedRange<Int>, message: String, duration: Double)] = [
+                        (30...45, "Processing audio file...", 30.0),      // 30s
+                        (46...60, "Analyzing content...", 30.0),          // 30s
+                        (61...75, "Extracting insights...", 25.0),        // 25s
+                        (76...85, "Finalizing analysis...", 15.0),        // 15s
+                        (86...95, "Almost done...", 5.0)                  // 5s
+                    ]
 
-                    for i in 70...95 {
-                        try? await _Concurrency.Task.sleep(nanoseconds: UInt64(delayPerStep * 1_000_000_000))
+                    for stage in stages {
                         await MainActor.run {
-                            uploadProgress = Double(i) / 100.0
+                            processingMessage = stage.message
                         }
-                        if i % 5 == 0 {
-                            print("📊 [ImportAudioView.Task] Simulated progress: \(i)% (elapsed: ~\(Int((Double(i - 70) / Double(totalSteps)) * Double(estimatedProcessingSeconds)))s)")
+
+                        let steps = stage.range.count
+                        let delayPerStep = stage.duration / Double(steps)
+
+                        for i in stage.range {
+                            try? await _Concurrency.Task.sleep(nanoseconds: UInt64(delayPerStep * 1_000_000_000))
+                            await MainActor.run {
+                                uploadProgress = Double(i) / 100.0
+                            }
+                            if i % 5 == 0 {
+                                print("📊 [ImportAudioView.Task] \(stage.message) \(i)%")
+                            }
                         }
                     }
 

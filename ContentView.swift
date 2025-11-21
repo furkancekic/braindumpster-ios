@@ -527,28 +527,53 @@ struct DailyProgressCard: View {
 // MARK: - AI Assistant Card
 struct AIAssistantCard: View {
     var body: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 36))
-                .foregroundColor(Color(red: 0.45, green: 0.75, blue: 1.0))
-                .frame(width: 64, height: 64)
-                .background(Color(red: 0.2, green: 0.25, blue: 0.32))
-                .cornerRadius(18)
+        HStack(spacing: 0) {
+            // Left side - Icon and content
+            HStack(spacing: 16) {
+                // Icon with gradient circle background
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.93, green: 0.26, blue: 0.26).opacity(0.15))
+                        .frame(width: 72, height: 72)
 
-            Text("AI Assistant Ready")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
+                    Image(systemName: "mic.circle.fill")
+                        .font(.system(size: 40, weight: .semibold))
+                        .foregroundColor(Color(red: 0.93, green: 0.26, blue: 0.26))
+                }
 
-            Text("Tell me your tasks by voice or text, I'll handle them")
-                .font(.system(size: 14))
-                .foregroundColor(Color.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .lineSpacing(2)
-                .padding(.horizontal, 30)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Meeting Recorder")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Record, transcribe & analyze\nmeetings with AI")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer()
+
+            // Right side - Navigation chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white.opacity(0.4))
+                .padding(.trailing, 4)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 36)
-        .background(Color(red: 0.11, green: 0.13, blue: 0.18))
+        .padding(.vertical, 28)
+        .padding(.horizontal, 20)
+        .background(
+            ZStack {
+                Color(red: 0.11, green: 0.13, blue: 0.18)
+
+                // Subtle red accent border
+                RoundedRectangle(cornerRadius: 22)
+                    .strokeBorder(Color(red: 0.93, green: 0.26, blue: 0.26).opacity(0.25), lineWidth: 1.5)
+            }
+        )
         .cornerRadius(22)
     }
 }
