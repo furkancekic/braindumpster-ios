@@ -30,7 +30,7 @@ struct RecordingDetailView: View {
                     VStack(spacing: 0) {
                         // Header
                         VStack(alignment: .leading, spacing: 16) {
-                            // Back button and menu
+                            // Back button, Share/Export, and menu
                             HStack {
                                 Button(action: {
                                     dismiss()
@@ -45,17 +45,65 @@ struct RecordingDetailView: View {
 
                                 Spacer()
 
+                                // Share Button
+                                Button(action: {
+                                    exportToPDF()
+                                }) {
+                                    HStack(spacing: 6) {
+                                        if isGeneratingPDF {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "square.and.arrow.up")
+                                                .font(.system(size: 15, weight: .semibold))
+                                        }
+                                        Text(isGeneratingPDF ? "..." : "Share")
+                                            .font(.system(size: 15, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [
+                                                Color(red: 0.35, green: 0.75, blue: 0.95),
+                                                Color(red: 0.45, green: 0.55, blue: 0.95)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .cornerRadius(12)
+                                }
+                                .disabled(isGeneratingPDF)
+
+                                // Export Button
+                                Button(action: {
+                                    exportToPDF()
+                                }) {
+                                    HStack(spacing: 6) {
+                                        if isGeneratingPDF {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "arrow.down.doc")
+                                                .font(.system(size: 15, weight: .semibold))
+                                        }
+                                        Text(isGeneratingPDF ? "..." : "Export")
+                                            .font(.system(size: 15, weight: .semibold))
+                                    }
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(white: 0.95))
+                                    .cornerRadius(12)
+                                }
+                                .disabled(isGeneratingPDF)
+
+                                // Delete Menu
                                 Menu {
-                                    Button(action: {
-                                        exportToPDF()
-                                    }) {
-                                        Label("Share", systemImage: "square.and.arrow.up")
-                                    }
-                                    Button(action: {
-                                        exportToPDF()
-                                    }) {
-                                        Label("Export", systemImage: "arrow.down.doc")
-                                    }
                                     Button(role: .destructive, action: {
                                         showDeleteConfirmation = true
                                     }) {
@@ -366,59 +414,6 @@ struct RecordingDetailView: View {
                                 .padding(18)
                                 .background(Color(white: 0.97))
                                 .cornerRadius(16)
-
-                                // Share and Export Buttons
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        exportToPDF()
-                                    }) {
-                                        HStack {
-                                            if isGeneratingPDF {
-                                                ProgressView()
-                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                                    .scaleEffect(0.8)
-                                            } else {
-                                                Image(systemName: "square.and.arrow.up")
-                                                    .font(.system(size: 16))
-                                            }
-
-                                            Text(isGeneratingPDF ? "Generating..." : "Share")
-                                                .font(.system(size: 16, weight: .semibold))
-                                        }
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            Color(red: 0.35, green: 0.61, blue: 0.95)
-                                        )
-                                        .cornerRadius(12)
-                                    }
-                                    .disabled(isGeneratingPDF)
-
-                                    Button(action: {
-                                        exportToPDF()
-                                    }) {
-                                        HStack {
-                                            if isGeneratingPDF {
-                                                ProgressView()
-                                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                                    .scaleEffect(0.8)
-                                            } else {
-                                                Image(systemName: "arrow.down.doc")
-                                                    .font(.system(size: 16))
-                                            }
-
-                                            Text(isGeneratingPDF ? "Generating..." : "Export")
-                                                .font(.system(size: 16, weight: .semibold))
-                                        }
-                                        .foregroundColor(.black)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(Color(white: 0.94))
-                                        .cornerRadius(12)
-                                    }
-                                    .disabled(isGeneratingPDF)
-                                }
                             }
                             .padding(.horizontal, 20)
                             .padding(.top, 24)
